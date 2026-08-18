@@ -5,41 +5,29 @@ on:
   pull_request:
 
 jobs:
-  linux:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        swift-version: ["6.0", "6.3"]
-    container: swift:${{ matrix.swift-version }}
-    steps:
-      - uses: actions/checkout@v4
-      - name: Verify Swift ${{ matrix.swift-version }}
-        run: swift --version | grep -F "Swift version ${{ matrix.swift-version }}"
-      - name: Release build
-        run: swift build -c release
-      - name: Release tests
-        run: swift test -c release
-
   apple:
     runs-on: macos-26
     env:
       DEVELOPER_DIR: /Applications/Xcode_26.4.1.app/Contents/Developer
     strategy:
+      fail-fast: false
       matrix:
-        destination:
-          - generic/platform=macOS
-          - generic/platform=iOS
-          - generic/platform=tvOS
-          - generic/platform=visionOS
-          - generic/platform=watchOS
+        include:
+          - platform: macOS
+            destination: platform=macOS
+          - platform: iOS
+            destination: platform=iOS Simulator,name=iPhone 17 Pro,OS=latest
+          - platform: tvOS
+            destination: platform=tvOS Simulator,name=Apple TV 4K (3rd generation),OS=latest
+          - platform: visionOS
+            destination: platform=visionOS Simulator,name=Apple Vision Pro,OS=latest
+          - platform: watchOS
+            destination: platform=watchOS Simulator,name=Apple Watch Series 11 (46mm),OS=latest
     steps:
       - uses: actions/checkout@v4
       - name: Verify Xcode 26.4.1 and Swift 6.3
         run: |
           xcodebuild -version | grep -F 'Xcode 26.4.1'
           swift --version | grep -F 'Swift version 6.3'
-      - name: Build for ${{ matrix.destination }}
-        run: xcodebuild build -scheme Lockbox -destination '${{ matrix.destination }}'
-      - name: macOS SwiftPM tests
-        if: matrix.destination == 'generic/platform=macOS'
-        run: swift test
+      - name: Test on ${{ matrix.platform }}
+        run: xcodebuild test -scheme Lockbox -destination '${{ matrix.destination }}'

@@ -1,14 +1,16 @@
 #if canImport(Security)
-import LocalAuthentication
+import Security
 import os.log
 
-#if !os(tvOS)
+#if canImport(LocalAuthentication) && !os(tvOS)
+import LocalAuthentication
+
 extension LAContext: @unchecked @retroactive Sendable {}
 #endif
 
 extension SecAccessControl: @unchecked @retroactive Sendable {}
 
-#if !os(watchOS) && !os(tvOS) && !os(visionOS)
+#if canImport(LocalAuthentication) && !os(watchOS) && !os(tvOS) && !os(visionOS)
 import Foundation
 
 public extension LAContext {
