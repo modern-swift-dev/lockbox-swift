@@ -20,7 +20,7 @@ jobs:
           - platform: tvOS
             destination: platform=tvOS Simulator,name=Apple TV 4K (3rd generation),OS=latest
           - platform: visionOS
-            destination: platform=visionOS Simulator,name=Apple Vision Pro,OS=latest
+            destination: platform=visionOS Simulator,name=CI Apple Vision Pro,OS=26.4
           - platform: watchOS
             destination: platform=watchOS Simulator,name=Apple Watch Series 11 (46mm),OS=latest
     steps:
@@ -29,5 +29,11 @@ jobs:
         run: |
           xcodebuild -version | grep -F 'Xcode 26.4.1'
           swift --version | grep -F 'Swift version 6.3'
+      - name: Create visionOS simulator
+        if: matrix.platform == 'visionOS'
+        run: >-
+          xcrun simctl create 'CI Apple Vision Pro'
+          'com.apple.CoreSimulator.SimDeviceType.Apple-Vision-Pro-4K'
+          'com.apple.CoreSimulator.SimRuntime.xrOS-26-4'
       - name: Test on ${{ matrix.platform }}
         run: xcodebuild test -scheme Lockbox -destination '${{ matrix.destination }}'
