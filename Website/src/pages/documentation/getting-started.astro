@@ -1,0 +1,37 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import CodeBlock from "../../components/CodeBlock.astro";
+import SnapshotComparison from "../../components/SnapshotComparison.astro";
+import { latestRelease } from "../../lib/release";
+const release = await latestRelease();
+const manifest = `dependencies: [
+    .package(
+        url: "https://github.com/modern-swift-dev/lockbox-swift.git",
+        from: "${release.version}"
+    )
+],
+targets: [
+    .target(name: "YourTarget", dependencies: ["Lockbox"])
+]`;
+const workflow = `import Foundation
+import Lockbox
+
+let password = KeychainPassword.generic(
+    service: "com.example.account",
+    account: "person@example.com"
+)
+
+try password.set(string: "first-secret")
+let firstValue = try password.getString()
+
+try password.set(string: "replacement-secret")
+let updatedValue = try password.getString()
+
+try password.remove()`;
+---
+<BaseLayout title="Getting started | Lockbox" description="Install Lockbox and perform a complete generic-password workflow.">
+  <section class="page-shell py-20 sm:py-28"><p class="eyebrow">Getting started</p><h1 class="section-title">Store one secret end to end.</h1><p class="section-copy">This guide uses a generic password. It is the smallest useful Lockbox workflow, and it shows how repeated saves update the same keychain item.</p></section>
+  <section class="page-shell grid gap-12 pb-20 lg:grid-cols-[.8fr_1.2fr]"><div><h2 class="text-2xl font-bold text-ink">Requirements</h2><ul class="mt-4 space-y-2 leading-7 text-muted"><li>Swift 6</li><li>macOS 15+, iOS 18+, or visionOS 1+ for this <code>KeychainPassword</code> workflow</li><li>tvOS 18+ and watchOS 10+ can use the lower-level <code>KeychainCriterion</code> API</li><li>An app target with the platform capabilities it needs</li></ul><h2 class="mt-9 text-2xl font-bold text-ink">Install</h2><p class="mt-4 leading-7 text-muted">Add the package in Xcode, then add its <code>Lockbox</code> product to your target. Swift Package Manager users can pin a release in their manifest.</p></div><CodeBlock code={manifest} label="Package.swift" /></section>
+  <section class="page-shell pb-12"><h2 class="text-2xl font-bold text-ink">Save, read, update, and remove</h2><p class="mt-3 max-w-2xl leading-7 text-muted">The service and account form the identity of a generic password. A second <code>set</code> updates that matching item. Use <code>remove</code> when the secret should no longer remain in the keychain.</p><div class="mt-7"><CodeBlock code={workflow} label="Complete keychain workflow" /></div></section>
+  <section class="page-shell pb-20"><SnapshotComparison /></section>
+</BaseLayout>

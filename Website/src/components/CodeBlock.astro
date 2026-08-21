@@ -1,0 +1,8 @@
+---
+interface Props { code: string; label?: string; }
+const { code, label = "Swift" } = Astro.props;
+---
+<div class="overflow-hidden rounded-3xl border border-slate-800 bg-slate-950 shadow-2xl shadow-indigo-950/20" role="region" aria-label={label}>
+  <div class="flex items-center justify-between border-b border-slate-800 px-5 py-3 text-xs font-semibold tracking-wide text-slate-400 uppercase"><span>{label}</span><span aria-hidden="true">swift</span></div>
+  <pre class="overflow-x-auto p-5 text-sm leading-7 text-slate-100 sm:p-6"><code>{code}</code></pre>
+</div>

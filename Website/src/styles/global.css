@@ -1,0 +1,30 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Avenir Next", Avenir, "Segoe UI", sans-serif;
+  --color-ink: #172554;
+  --color-muted: #52617b;
+  --color-paper: #fbfcff;
+}
+
+@layer base {
+  html { scroll-behavior: smooth; }
+  body { @apply m-0 bg-paper font-sans text-slate-800 antialiased; }
+  a { @apply underline-offset-4; }
+  :focus-visible { @apply outline-3 outline-offset-3 outline-indigo-600; }
+}
+
+@layer components {
+  .page-shell { @apply mx-auto w-full max-w-6xl px-5 sm:px-8; }
+  .eyebrow { @apply inline-flex rounded-full bg-indigo-100 px-3 py-1 text-xs font-bold tracking-[0.14em] text-indigo-700 uppercase; }
+  .section-title { @apply mt-4 text-3xl font-bold tracking-tight text-ink sm:text-4xl; }
+  .section-copy { @apply mt-4 max-w-2xl text-lg leading-8 text-muted; }
+  .card { @apply rounded-3xl border border-indigo-100 bg-white shadow-[0_10px_30px_rgba(79,70,229,0.08)]; }
+  .button-primary { @apply inline-flex items-center justify-center rounded-full bg-indigo-600 px-5 py-3 font-semibold text-white no-underline shadow-lg shadow-indigo-200 transition hover:bg-indigo-700; }
+  .button-secondary { @apply inline-flex items-center justify-center rounded-full border border-indigo-200 bg-white px-5 py-3 font-semibold text-indigo-700 no-underline transition hover:bg-indigo-50; }
+  .prose-link { @apply font-semibold text-indigo-700 hover:text-violet-700; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; }
+}

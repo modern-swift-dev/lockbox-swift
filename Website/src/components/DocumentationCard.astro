@@ -1,0 +1,11 @@
+---
+interface Props { title: string; description: string; href: string; symbol: string; headingLevel?: "h2" | "h3"; }
+const { title, description, href, symbol, headingLevel = "h3" } = Astro.props;
+const Heading = headingLevel;
+---
+<a class="card group block p-6 no-underline transition duration-200 hover:-translate-y-1 hover:border-indigo-200 hover:shadow-[0_18px_36px_rgba(79,70,229,0.14)]" href={href}>
+  <span class="grid size-10 place-items-center rounded-2xl bg-gradient-to-br from-indigo-100 to-violet-100 font-mono font-bold text-indigo-700">{symbol}</span>
+  <Heading class="mt-5 text-lg font-bold text-ink">{title}</Heading>
+  <p class="mt-2 leading-7 text-muted">{description}</p>
+  <span class="mt-5 inline-flex font-semibold text-indigo-700">Open guide <span class="ml-1 transition group-hover:translate-x-1" aria-hidden="true">→</span></span>
+</a>

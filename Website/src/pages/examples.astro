@@ -1,0 +1,62 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import CodeBlock from "../components/CodeBlock.astro";
+const generic = `import Foundation
+import Lockbox
+
+let tokenData = Data("session-token".utf8)
+let token = KeychainPassword.generic(
+    service: "com.example.session",
+    account: "current"
+)
+
+try token.set(data: tokenData)
+let savedToken = try token.getData()`;
+const internet = `import Foundation
+import Lockbox
+
+let password = KeychainPassword.internet(
+    url: URL(string: "https://api.example.com/oauth/token")!,
+    service: "com.example.api",
+    account: "person@example.com"
+)
+
+try password.set(string: "api-secret")`;
+const criteria = `import Foundation
+import Lockbox
+
+let criteria: [KeychainCriterion] = [
+    .securityClass(.genericPassword),
+    .service("com.example.account"),
+    .account("person@example.com")
+]
+
+if try criteria.exists(), let record = try criteria.retrieve() {
+    let value = record.data.flatMap { String(data: $0, encoding: .utf8) }
+    print(record.account, value ?? "")
+}`;
+const biometrics = `import Lockbox
+
+let authentication = LocalAuthenticationService(
+    reason: "Access your saved credentials"
+)
+let credentials = BiometricService(
+    service: "com.example.credentials",
+    localAuthenticationService: authentication
+)
+
+try await credentials.save(
+    email: "person@example.com",
+    password: "a-secret"
+)
+
+switch try await credentials.retrieve() {
+case .success(let username, let password),
+     .biometricChanged(let username, let password):
+    print(username, password)
+}`;
+---
+<BaseLayout title="Examples | Lockbox" description="Working Lockbox examples for passwords, criteria, and biometrics.">
+  <section class="page-shell py-20 sm:py-28"><p class="eyebrow">Examples</p><h1 class="section-title">Code from the package's real APIs.</h1><p class="section-copy">These examples use the same public calls described in the repository guides and the bundled example app. Replace the service names and accounts with values owned by your app.</p></section>
+  <section class="page-shell space-y-16 pb-24"><article id="generic-password" class="scroll-mt-24 grid gap-7 lg:grid-cols-[.8fr_1.2fr]"><div><h2 class="text-2xl font-bold text-ink">Generic password data</h2><p class="mt-3 leading-7 text-muted">Use a generic password for a small secret identified by a service and account. Lockbox can store raw <code>Data</code> when the value is not a string.</p></div><CodeBlock code={generic} label="Generic password" /></article><article id="internet-password" class="scroll-mt-24 grid gap-7 lg:grid-cols-[.8fr_1.2fr]"><div><h2 class="text-2xl font-bold text-ink">Internet password</h2><p class="mt-3 leading-7 text-muted">Attach the credential to its URL. Lockbox turns the URL into the keychain attributes needed by an internet password item.</p></div><CodeBlock code={internet} label="Internet password" /></article><article id="keychain-criteria" class="scroll-mt-24 grid gap-7 lg:grid-cols-[.8fr_1.2fr]"><div><h2 class="text-2xl font-bold text-ink">Typed keychain criteria</h2><p class="mt-3 leading-7 text-muted">Use criteria when the password factories do not cover the attributes or operation you need. The retrieved record contains the returned attributes and data.</p></div><CodeBlock code={criteria} label="Keychain criterion" /></article><article id="biometrics" class="scroll-mt-24 grid gap-7 lg:grid-cols-[.8fr_1.2fr]"><div><h2 class="text-2xl font-bold text-ink">Biometric credentials on iOS</h2><p class="mt-3 leading-7 text-muted">Check device support and configuration in your app before showing this path. Keep a non-biometric recovery route for users who cannot authenticate with the enrolled set.</p></div><CodeBlock code={biometrics} label="Biometric service" /></article></section>
+</BaseLayout>

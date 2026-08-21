@@ -15,10 +15,14 @@ let package = Package(
         .library(name: "Lockbox", targets: ["Lockbox"])
     ],
     dependencies: [
+        .package(
+            url: "https://github.com/swiftlang/swift-docc-plugin",
+            exact: "1.5.0"
+        )
     ],
     targets: [
         .target(name: "Lockbox"),
-        .testTarget(name: "LockboxTests", dependencies: ["Lockbox"]),
+        .testTarget(name: "LockboxTests", dependencies: ["Lockbox"])
     ],
     swiftLanguageModes: [.v6]
 )

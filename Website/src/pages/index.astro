@@ -1,0 +1,46 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import CodeBlock from "../components/CodeBlock.astro";
+import DocumentationCard from "../components/DocumentationCard.astro";
+import ReleaseCard from "../components/ReleaseCard.astro";
+import SnapshotComparison from "../components/SnapshotComparison.astro";
+import { latestRelease } from "../lib/release";
+
+const release = await latestRelease();
+const base = `${import.meta.env.BASE_URL}/`;
+const example = `import Lockbox
+
+let password = KeychainPassword.generic(
+    service: "com.example.account",
+    account: "person@example.com"
+)
+
+try password.set(string: "a-secret")
+let savedPassword = try password.getString()
+try password.remove()`;
+---
+<BaseLayout title="Lockbox | Typed Swift keychain access" description="A small, type-safe Swift wrapper around Apple Keychain Services and Local Authentication.">
+  <section class="overflow-hidden bg-[linear-gradient(135deg,#e0e7ff_0%,#ede9fe_52%,#faf5ff_100%)] py-20 sm:py-28">
+    <div class="page-shell grid items-center gap-12 lg:grid-cols-[1.1fr_.9fr]">
+      <div>
+        <p class="eyebrow">Swift keychain access</p>
+        <h1 class="mt-5 max-w-3xl text-5xl font-bold tracking-tight text-ink sm:text-6xl">Put keychain calls behind Swift types.</h1>
+        <p class="mt-6 max-w-2xl text-lg leading-8 text-muted">Lockbox stores generic and internet passwords, builds typed keychain queries, and helps iOS apps protect credentials with the enrolled biometric set.</p>
+        <div class="mt-8 flex flex-wrap gap-3"><a class="button-primary" href={`${base}documentation/getting-started/`}>Get started</a><a class="button-secondary" href={`${base}examples/`}>Browse examples</a></div>
+      </div>
+      <ReleaseCard release={release} />
+    </div>
+  </section>
+
+  <section class="page-shell py-20">
+    <div class="grid gap-10 lg:grid-cols-[1fr_1.05fr] lg:items-center"><div><p class="eyebrow">One familiar workflow</p><h2 class="section-title">Save, read, update, then remove.</h2><p class="section-copy">A <code>KeychainPassword</code> value identifies an item. <code>set</code> creates it or updates the existing match. Reads return <code>nil</code> when there is no item.</p></div><CodeBlock code={example} label="A generic password" /></div>
+  </section>
+
+  <section class="page-shell py-8"><SnapshotComparison /></section>
+
+  <section class="page-shell py-20"><p class="eyebrow">What is included</p><h2 class="section-title">The parts of Keychain Services that apps use every day.</h2><div class="mt-10 grid gap-5 md:grid-cols-2"><DocumentationCard symbol="G" title="Generic passwords" description="Store strings or data using a service and account." href={`${base}documentation/getting-started/`} /><DocumentationCard symbol="I" title="Internet passwords" description="Associate a credential with a URL and its authentication type." href={`${base}examples/`} /><DocumentationCard symbol="Q" title="Typed queries" description="Build create, update, find, and delete operations from enum values." href={`${base}documentation/`} /><DocumentationCard symbol="B" title="Biometrics" description="Save iOS credentials protected by the current biometric enrollment." href={`${base}examples/`} /></div></section>
+
+  <section class="page-shell py-12"><div class="card grid gap-8 bg-[linear-gradient(135deg,#f8fafc_0%,#e0e7ff_50%,#ede9fe_100%)] p-8 sm:p-10 md:grid-cols-2"><div><p class="eyebrow">Platform support</p><h2 class="mt-4 text-2xl font-bold text-ink">Built for current Apple platforms.</h2></div><ul class="grid gap-3 text-muted sm:grid-cols-2"><li><strong class="text-ink">iOS 18+</strong><br />Passwords, typed queries, Local Authentication, and biometrics</li><li><strong class="text-ink">macOS 15+</strong><br />Passwords, typed queries, and Local Authentication</li><li><strong class="text-ink">visionOS 1+</strong><br />Passwords and typed queries</li><li><strong class="text-ink">tvOS 18+ and watchOS 10+</strong><br />Typed Security framework queries</li></ul></div></section>
+
+  <section class="page-shell py-20"><div class="rounded-3xl bg-slate-950 p-8 text-white sm:p-12"><p class="text-sm font-bold tracking-[0.14em] text-indigo-300 uppercase">Open source</p><h2 class="mt-4 max-w-2xl text-3xl font-bold tracking-tight">Read the source before you store a secret.</h2><p class="mt-4 max-w-2xl leading-7 text-slate-300">Lockbox is an MIT-licensed Swift package maintained by modern-swift-dev. Its source, tests, and example app live in the repository.</p><a class="mt-7 inline-flex rounded-full bg-white px-5 py-3 font-semibold text-indigo-700 no-underline transition hover:bg-indigo-50" href="https://github.com/modern-swift-dev/lockbox-swift">View on GitHub</a></div></section>
+</BaseLayout>
