@@ -336,15 +336,25 @@ public extension [KeychainCriterion] {
 
     /// Creates an item when no item matches; otherwise updates matching items.
     ///
-    /// This method first performs an existence query and therefore is not atomic.
+    /// Attempts to add the item, then updates it if an equivalent item already exists.
+    /// Concurrent writers can create the same item without a duplicate-item error.
+    /// A concurrent deletion between the add and update can still cause an error.
     /// - Parameter data: The bytes to create or use as replacement data.
-    /// - Throws: ``KeychainError/underlyingError(status:message:)`` if the lookup,
-    ///   create, or update operation fails.
+    /// - Throws: ``KeychainError/underlyingError(status:message:)`` if the create
+    ///   or update operation fails.
     func createOrUpdate(data: Data) throws {
-        if try exists() {
-            try update(data: data)
-        } else {
-            try create(data: data)
+        try Self.upsert(
+            create: { try create(data: data) },
+            update: { try update(data: data) }
+        )
+    }
+
+    /// Keeps duplicate-item recovery independently testable without Keychain entitlements.
+    internal static func upsert(create: () throws -> Void, update: () throws -> Void) throws {
+        do {
+            try create()
+        } catch KeychainError.underlyingError(status: errSecDuplicateItem, message: _) {
+            try update()
         }
     }
 
