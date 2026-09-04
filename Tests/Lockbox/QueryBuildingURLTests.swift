@@ -32,8 +32,9 @@ import Testing
         ]
         let query = try #require(criteria.query as? [String: AnyObject])
 
-        // Note: SMB incorrectly maps to SSH in the implementation
-        #expect(query[kSecAttrProtocol as String] as? String == kSecAttrProtocolSSH as String)
+        #expect(query[kSecAttrProtocol as String] as? String == kSecAttrProtocolSMB as String)
+        let explicitQuery = try #require([KeychainCriterion.urlScheme(.smb)].query as? [String: AnyObject])
+        #expect(query[kSecAttrProtocol as String] as? String == explicitQuery[kSecAttrProtocol as String] as? String)
     }
 
     @Test func queryContainsURLWithUnknownScheme() throws {

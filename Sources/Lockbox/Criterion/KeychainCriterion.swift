@@ -251,7 +251,7 @@ public extension [KeychainCriterion] {
                             case "ssh":
                                 query[kSecAttrProtocol as String] = KeychainCriterion.InternetProtocol.ssh.queryValue as AnyObject?
                             case "smb":
-                                query[kSecAttrProtocol as String] = KeychainCriterion.InternetProtocol.ssh.queryValue as AnyObject?
+                                query[kSecAttrProtocol as String] = KeychainCriterion.InternetProtocol.smb.queryValue as AnyObject?
                             default:
                                 break
                         }
