@@ -7,6 +7,25 @@ import Testing
 
 @Suite(.serialized) struct LAContextPolicyEvaluationResultTests {
 
+    @Test func comparingBiometricStateNeverAdvancesTheBaseline() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let baseline = BiometricBaseline(fileURL: directory.appendingPathComponent("state"))
+        let original = Data([1, 2, 3])
+        let replacement = Data([4, 5, 6])
+
+        #expect(try !baseline.hasChanged(from: original))
+        #expect(!FileManager.default.fileExists(atPath: baseline.fileURL.path))
+        try baseline.record(original)
+        #expect(try baseline.hasChanged(from: replacement))
+        #expect(try baseline.hasChanged(from: replacement))
+        #expect(try Data(contentsOf: baseline.fileURL) == original)
+
+        try baseline.record(replacement)
+        #expect(try !baseline.hasChanged(from: replacement))
+        #expect(try baseline.hasChanged(from: original))
+    }
+
     @Test func biometricChangedCaseTrue() {
         let result = LAContext.PolicyEvaluationResult.biometricChanged(true)
         if case let .biometricChanged(value) = result {
@@ -60,7 +79,12 @@ import Testing
             error: nil
         )
         // Without biometric data changed, true result should return success
-        #expect(({ if case .success = result { return true }; if case .biometricChanged = result { return true }; return false })())
+        #expect(({
+            if case .success = result {
+                return true
+            }; if case .biometricChanged = result {
+                return true
+            }; return false })())
     }
 
     @Test func fromWithFailureReturnsFailed() {
@@ -72,7 +96,12 @@ import Testing
             error: nil
         )
         // Without biometric data changed and false result should return failed
-        #expect(({ if case .failed = result { return true }; if case .biometricChanged = result { return true }; return false })())
+        #expect(({
+            if case .failed = result {
+                return true
+            }; if case .biometricChanged = result {
+                return true
+            }; return false })())
     }
 
     @Test func fromWithCreateItemOperation() {
@@ -84,7 +113,12 @@ import Testing
             error: nil
         )
         // Should handle createItem operation
-        #expect(({ if case .success = result { return true }; if case .biometricChanged = result { return true }; return false })())
+        #expect(({
+            if case .success = result {
+                return true
+            }; if case .biometricChanged = result {
+                return true
+            }; return false })())
     }
 }
 #endif

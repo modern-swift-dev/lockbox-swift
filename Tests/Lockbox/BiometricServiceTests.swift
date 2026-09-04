@@ -121,6 +121,7 @@ import Testing
             keychainOverride: keychain
         )
         try await service.save(email: "user", password: "secret")
+        #expect(authentication.recordCount == 1)
         let result = try await service.retrieve()
         switch result {
             case let .success(username, password):
@@ -134,6 +135,39 @@ import Testing
         }
         #expect(keychain.operations == [.write(afterEvaluations: 1), .read(afterEvaluations: 2)])
         #expect(authentication.evaluationCount == 2)
+        #expect(authentication.recordCount == 1)
+    }
+
+    @Test func failedKeychainSaveDoesNotRecordBiometricState() async {
+        let authentication = MockLocalAuthenticationService(result: .biometricChanged(true))
+        let keychain = MockBiometricCredentialStore(authentication: authentication, failsWrites: true)
+        let service = BiometricService(
+            service: "BiometricServiceTests.failedSave.\(UUID().uuidString)",
+            localAuthenticationService: authentication,
+            keychainOverride: keychain
+        )
+        await #expect(throws: BiometricServiceError.self) {
+            try await service.save(email: "user", password: "secret")
+        }
+        #expect(authentication.evaluationCount == 1)
+        #expect(authentication.recordCount == 0)
+        #expect(keychain.operations == [.write(afterEvaluations: 1)])
+    }
+
+    @Test func rejectedAuthenticationDoesNotWriteCredentialsOrBaseline() async {
+        let name = "BiometricServiceTests.denied.\(UUID().uuidString)"
+        let authentication = MockLocalAuthenticationService(result: .biometricChanged(false))
+        let keychain = MockBiometricCredentialStore(authentication: authentication)
+        let service = BiometricService(
+            service: name,
+            localAuthenticationService: authentication,
+            keychainOverride: keychain
+        )
+        await #expect(throws: BiometricServiceError.self) {
+            try await service.save(email: "user", password: "secret")
+        }
+        #expect(authentication.recordCount == 0)
+        #expect(keychain.operations.isEmpty)
     }
 
 }

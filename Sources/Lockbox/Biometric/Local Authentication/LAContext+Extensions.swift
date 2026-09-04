@@ -1,6 +1,6 @@
 #if canImport(Security)
-import Security
 import os.log
+import Security
 
 #if canImport(LocalAuthentication) && !os(tvOS)
 import LocalAuthentication
@@ -15,37 +15,34 @@ import Foundation
 
 public extension LAContext {
 
-    /// Evaluate if the biometric data has changed since `write` operation to the keychain
-    internal func hasBiometricDataChanged(_ operation: LAAccessControlOperation) -> Bool {
-        guard let newData = domainState.stateHash else {
+    /// Compares the current biometric state without changing the saved baseline.
+    internal func hasBiometricDataChanged(_: LAAccessControlOperation) -> Bool {
+        guard let newData = domainState.stateHash, let baseline = biometricBaseline else {
             return false
         }
-
-        guard let bundleId = Bundle.main.bundleIdentifier else {
-            return false
-        }
-
         do {
-            let fileUrl = URL.applicationSupportDirectory.appendingPathComponent("\(bundleId).biometrics")
-            if FileManager.default.fileExists(atPath: fileUrl.path) {
-                let previousData = try Data(contentsOf: fileUrl)
-                if previousData != newData {
-                    return true
-                }
-            }
-
-            // We write the opaque data structure ONLY if we're creating an item. otherwise
-            // all other operation (which should be `.useItem`) will simply not write it
-            // down.
-            if operation == .createItem {
-                try newData.write(to: fileUrl, options: [.atomicWrite])
-            }
-
-            return false
+            return try baseline.hasChanged(from: newData)
         } catch {
             os_log("%{public}@", type: .error, error.localizedDescription)
             return true
         }
+    }
+
+    /// Records a baseline only after the caller has successfully stored its credentials.
+    internal func recordBiometricState() throws {
+        guard let data = domainState.stateHash, let baseline = biometricBaseline else {
+            return
+        }
+        try baseline.record(data)
+    }
+
+    private var biometricBaseline: BiometricBaseline? {
+        guard let bundleId = Bundle.main.bundleIdentifier else {
+            return nil
+        }
+        return BiometricBaseline(
+            fileURL: URL.applicationSupportDirectory.appendingPathComponent("\(bundleId).biometrics")
+        )
     }
 
     /// Evaluates access using the strategy selected by a security mode.

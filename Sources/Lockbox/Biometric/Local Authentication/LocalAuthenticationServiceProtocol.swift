@@ -46,8 +46,18 @@ public protocol LocalAuthenticationServiceProtocol: Sendable {
         reason: String?
     ) async -> LAContext.PolicyEvaluationResult
 
+    /// Records the current biometric baseline after credentials have been successfully saved.
+    func recordBiometricState() throws
+
     /// Invalidates the context and clears its cached authentication state.
     func invalidate()
+}
+
+public extension LocalAuthenticationServiceProtocol {
+    /// Persists the context's current biometric state after successful credential storage.
+    func recordBiometricState() throws {
+        try context.recordBiometricState()
+    }
 }
 
 #endif

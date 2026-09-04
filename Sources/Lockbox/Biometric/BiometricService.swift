@@ -157,8 +157,8 @@ public final class BiometricService: BiometricServiceProtocol, Sendable {
     ///   - email: The username or email address to store.
     ///   - password: The password to store.
     /// - Throws: ``BiometricServiceError`` when biometrics are unsupported, not
-    ///   configured, rejected, or unavailable. Encoding and keychain errors are
-    ///   wrapped in ``BiometricServiceError/underlying(_:)``.
+    ///   configured, rejected, or unavailable.
+    ///   Encoding, keychain, and biometric-baseline storage errors are wrapped in ``BiometricServiceError/underlying(_:)``.
     public func save(email: String, password: String) async throws {
         guard supportedByDevice else {
             throw BiometricServiceError.unsupported
@@ -179,6 +179,7 @@ public final class BiometricService: BiometricServiceProtocol, Sendable {
                     let credentials = Credentials(username: email, password: password)
                     let data = try JSONEncoder().encode(credentials)
                     try keychain.set(data: data)
+                    try localAuthenticationService.recordBiometricState()
 
                 case .failed,
                      .biometricChanged(false):
