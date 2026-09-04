@@ -47,7 +47,7 @@ public final class BiometricService: BiometricServiceProtocol, Sendable {
     private let accessControl: SecAccessControl
 
     /// The Keychain Item that wraps the credentials
-    private let keychain: KeychainPassword
+    private let keychain: any BiometricCredentialStore
 
     /// The biometric authentication technology supported by the device.
     public var supportedType: LABiometryType {
@@ -64,13 +64,31 @@ public final class BiometricService: BiometricServiceProtocol, Sendable {
         supportedType != .none
     }
 
-    /// A Boolean value that indicates whether the configured keychain item contains data.
+    /// A Boolean value that indicates whether the configured keychain item exists.
     ///
     /// This property does not authenticate or decode the stored credentials. Keychain
     /// access errors are treated as an absence of credentials.
     public var hasCredentials: Bool {
-        let data = try? keychain.getData()
-        return data != nil
+        SecItemCopyMatching(credentialExistenceQuery as CFDictionary, nil) == errSecSuccess
+    }
+
+    /// Attribute-only queries use a separate context so cached prompt settings cannot enable UI.
+    var credentialExistenceQuery: [String: Any] {
+        let context = LAContext()
+        context.interactionNotAllowed = true
+        var query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
+            kSecAttrAccount as String: account,
+            kSecAttrSynchronizable as String: synchronizable,
+            kSecReturnAttributes as String: true,
+            kSecMatchLimit as String: kSecMatchLimitOne,
+            kSecUseAuthenticationContext as String: context
+        ]
+        if let accessGroup {
+            query[kSecAttrAccessGroup as String] = accessGroup
+        }
+        return query
     }
 
     /// Creates a biometric credential service for a generic-password keychain item.
@@ -82,13 +100,31 @@ public final class BiometricService: BiometricServiceProtocol, Sendable {
     ///   - synchronizable: Whether the keychain item is eligible for synchronization.
     ///   - localAuthenticationService: The local-authentication service used for prompts
     ///     and as the keychain authentication context.
-    public init(
+    public convenience init(
         // swiftlint:disable:next force_unwrapping
         service: String = Bundle.main.bundleIdentifier!,
         account: String = "credentials",
         group accessGroup: String? = nil,
         synchronizable: Bool = false,
         localAuthenticationService: any LocalAuthenticationServiceProtocol
+    ) {
+        self.init(
+            service: service,
+            account: account,
+            group: accessGroup,
+            synchronizable: synchronizable,
+            localAuthenticationService: localAuthenticationService,
+            keychainOverride: nil
+        )
+    }
+
+    init(
+        service: String,
+        account: String = "credentials",
+        group accessGroup: String? = nil,
+        synchronizable: Bool = false,
+        localAuthenticationService: any LocalAuthenticationServiceProtocol,
+        keychainOverride: (any BiometricCredentialStore)?
     ) {
         self.service = service
         self.account = account
@@ -103,7 +139,7 @@ public final class BiometricService: BiometricServiceProtocol, Sendable {
             nil
             // swiftlint:disable:next force_unwrapping
         )!
-        keychain = KeychainPassword.generic(
+        keychain = keychainOverride ?? KeychainPassword.generic(
             service: service,
             account: account,
             accessGroup: accessGroup,
@@ -176,10 +212,6 @@ public final class BiometricService: BiometricServiceProtocol, Sendable {
         guard isProperlyConfigured else {
             throw BiometricServiceError.unconfigured
         }
-        guard hasCredentials else {
-            throw BiometricServiceError.unconfigured
-        }
-
         let result = await localAuthenticationService.evaluate(
             access: accessControl,
             operation: .useItem,
@@ -190,7 +222,7 @@ public final class BiometricService: BiometricServiceProtocol, Sendable {
                 case .success,
                      .biometricChanged(true):
                     guard let data = try keychain.getData() else {
-                        throw BiometricServiceError.failed
+                        throw BiometricServiceError.unconfigured
                     }
 
                     let credentials: Credentials = try JSONDecoder().decode(Credentials.self, from: data)
