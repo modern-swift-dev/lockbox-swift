@@ -43,6 +43,7 @@ public final class LocalAuthenticationService: LocalAuthenticationServiceProtoco
         #if targetEnvironment(simulator)
         return .faceID
         #else
+        _ = context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: nil)
         return context.biometryType
         #endif
     }
@@ -77,21 +78,7 @@ public final class LocalAuthenticationService: LocalAuthenticationServiceProtoco
     /// - Parameter policy: The policy whose availability should be checked.
     /// - Returns: `true` when the policy can be evaluated; otherwise, `false`.
     public func isProperlyConfigured(for policy: LAPolicy) -> Bool {
-        var error: NSError?
-        let context: LAContext = context
-        context.canEvaluatePolicy(policy, error: &error)
-        if let error = error as? LAError {
-            switch error.code {
-                case .biometryLockout,
-                     .biometryNotAvailable,
-                     .biometryNotEnrolled,
-                     .passcodeNotSet:
-                    return false
-                default:
-                    return false
-            }
-        }
-        return true
+        context.canEvaluatePolicy(policy, error: nil)
     }
 
     /// Evaluates the access control protecting a keychain item.

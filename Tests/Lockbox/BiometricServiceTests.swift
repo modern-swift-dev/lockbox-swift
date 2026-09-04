@@ -172,7 +172,7 @@ import Testing
         #expect(keychain.operations == [.write(afterEvaluations: 1)])
     }
 
-    @Test func rejectedAuthenticationDoesNotWriteCredentialsOrBaseline() async {
+    @Test func rejectedAuthenticationDoesNotWriteCredentialsOrBaseline() async throws {
         let name = "BiometricServiceTests.denied.\(UUID().uuidString)"
         let authentication = MockLocalAuthenticationService(result: .biometricChanged(false))
         let keychain = MockBiometricCredentialStore(authentication: authentication)
