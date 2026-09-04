@@ -85,9 +85,9 @@ import Testing
         #expect(result.queryValue == KeychainCriterion.AuthenticationType.default.queryValue)
     }
 
-    @Test func fromUnknownReturnsDefault() {
+    @Test func fromUnknownPreservesValue() {
         let result = KeychainCriterion.AuthenticationType.from("unknown_type")
-        #expect(result.queryValue == KeychainCriterion.AuthenticationType.default.queryValue)
+        #expect(result.queryValue == "unknown_type")
     }
 }
 #endif

@@ -18,6 +18,10 @@ public extension KeychainCriterion {
         /// Secure Shell.
         case ssh
 
+        /// A Security-framework protocol value without a named case.
+        /// Preserves existing item identities when enumerating the keychain.
+        case other(String)
+
         /// The Security-framework value used in a Keychain query.
         var queryValue: String {
             switch self {
@@ -33,6 +37,29 @@ public extension KeychainCriterion {
                     kSecAttrProtocolSMB as String
                 case .ssh:
                     kSecAttrProtocolSSH as String
+                case let .other(value):
+                    value
+            }
+        }
+
+        /// Converts a Security-framework protocol value without losing unknown values.
+        static func from(_ value: String) -> InternetProtocol {
+            let protocols: [InternetProtocol] = [.http, .https, .ftp, .ftps, .smb, .ssh]
+            for internetProtocol in protocols where internetProtocol.queryValue == value {
+                return internetProtocol
+            }
+            return .other(value)
+        }
+
+        var urlScheme: String? {
+            switch self {
+                case .http: "http"
+                case .https: "https"
+                case .ftp: "ftp"
+                case .ftps: "ftps"
+                case .smb: "smb"
+                case .ssh: "ssh"
+                case .other: nil
             }
         }
     }

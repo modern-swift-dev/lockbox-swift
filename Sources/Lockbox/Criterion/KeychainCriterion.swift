@@ -29,6 +29,9 @@ public enum KeychainCriterion: Sendable {
     /// Matches the service attribute (`kSecAttrService`).
     case service(String)
 
+    /// Matches an internet-password security domain (`kSecAttrSecurityDomain`).
+    case securityDomain(String)
+
     /// Matches the synchronizability attribute (`kSecAttrSynchronizable`).
     ///
     /// Pass `nil` to omit this attribute from the query.
@@ -187,6 +190,8 @@ public extension [KeychainCriterion] {
                     query[kSecClass as String] = value.queryValue as AnyObject?
                 case let .service(value):
                     query[kSecAttrService as String] = value as AnyObject?
+                case let .securityDomain(value):
+                    query[kSecAttrSecurityDomain as String] = value as AnyObject?
                 case let .synchronizable(value):
                     if let value {
                         query[kSecAttrSynchronizable as String] = value ? kCFBooleanTrue : kCFBooleanFalse

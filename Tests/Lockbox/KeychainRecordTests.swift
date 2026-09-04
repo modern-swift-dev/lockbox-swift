@@ -5,6 +5,24 @@ import Testing
 
 @Suite(.serialized) struct KeychainRecordTests {
 
+    @Test(arguments: [kSecAttrProtocolFTP as String, kSecAttrProtocolIMAP as String]) func internetIdentityPreservesStoredAttributes(protocolValue: String) throws {
+        let attributes: [String: AnyObject] = [
+            kSecClass as String: kSecClassInternetPassword,
+            kSecAttrSecurityDomain as String: "namespace" as NSString,
+            kSecAttrAccount as String: "account" as NSString,
+            kSecAttrServer as String: "example.com" as NSString,
+            kSecAttrProtocol as String: protocolValue as NSString,
+            kSecAttrAuthenticationType as String: "custom" as NSString,
+            kSecAttrPath as String: "" as NSString,
+            kSecAttrPort as String: NSNumber(value: 0),
+            kSecAttrAccessGroup as String: "group" as NSString,
+            kSecAttrSynchronizable as String: NSNumber(value: false)
+        ]
+        let record = KeychainRecord(attributes)
+        let query = try #require(record.internetPasswordCriteria.query as? [String: AnyObject])
+        #expect(NSDictionary(dictionary: query).isEqual(to: attributes))
+    }
+
     // MARK: - Basic Attribute Parsing
 
     @Test func initWithEmptyDictionaryUsesDefaults() {
@@ -169,14 +187,38 @@ import Testing
 
     // MARK: - URL Computed Property
 
-    @Test func urlPropertyReturnsHTTPSForUnknownScheme() {
+    @Test func urlPropertyPreservesMissingScheme() {
         let attributes: [String: AnyObject] = [
             kSecAttrServer as String: "example.com" as AnyObject
         ]
         let record = KeychainRecord(attributes)
 
-        #expect(record.url?.scheme == "https")
+        #expect(record.url?.scheme == nil)
         #expect(record.url?.host == "example.com")
+    }
+
+    @Test(arguments: [
+        KeychainCriterion.InternetProtocol.http, .https, .ftp, .ftps, .smb, .ssh
+    ]) func urlPreservesProtocol(_ internetProtocol: KeychainCriterion.InternetProtocol) throws {
+        let record = KeychainRecord([
+            kSecAttrProtocol as String: internetProtocol.queryValue as NSString,
+            kSecAttrServer as String: "example.com" as NSString,
+            kSecAttrPath as String: "/file" as NSString,
+            kSecAttrPort as String: NSNumber(value: 1234)
+        ])
+        let url = try #require(record.url)
+        #expect(url.scheme == internetProtocol.urlScheme)
+        #expect(url.port == 1234)
+        #expect(url.path == "/file")
+    }
+
+    @Test func urlDoesNotInventSchemeForUnknownProtocol() {
+        let record = KeychainRecord([
+            kSecAttrProtocol as String: "unknown" as NSString,
+            kSecAttrServer as String: "example.com" as NSString
+        ])
+        #expect(record.url == nil)
+        #expect(KeychainRecord([:]).url == nil)
     }
 
     @Test func urlPropertyReturnsHTTPForHTTPScheme() {

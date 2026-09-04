@@ -12,6 +12,15 @@ public struct KeychainRecord {
     /// The item's service attribute (`kSecAttrService`), or an empty string when absent.
     public let service: String
 
+    /// The internet-password security domain, or an empty string when absent.
+    public let securityDomain: String
+
+    /// The access group returned by Keychain Services, when present.
+    public let accessGroup: String?
+
+    /// Whether the returned item participates in iCloud Keychain synchronization.
+    public let synchronizable: Bool?
+
     /// The item's account attribute (`kSecAttrAccount`), or an empty string when absent.
     public let account: String
 
@@ -50,15 +59,18 @@ public struct KeychainRecord {
 
     /// A URL assembled from the record's internet-password attributes.
     ///
-    /// The reconstruction recognizes HTTP explicitly; all other protocol values
-    /// are represented with an HTTPS scheme. It returns `nil` when the available
-    /// components cannot form a valid URL.
+    /// Preserves supported protocols and leaves the scheme absent when the record
+    /// has none. Returns `nil` for unrecognized protocols or a missing host.
     public var url: URL? {
         var component = URLComponents()
-        if urlScheme == (kSecAttrProtocolHTTP as String) {
-            component.scheme = "http"
-        } else {
-            component.scheme = "https"
+        guard let urlHost, !urlHost.isEmpty else {
+            return nil
+        }
+        if let urlScheme {
+            guard let scheme = KeychainCriterion.InternetProtocol.from(urlScheme).urlScheme else {
+                return nil
+            }
+            component.scheme = scheme
         }
         component.host = urlHost
         component.port = urlPort
@@ -71,6 +83,9 @@ public struct KeychainRecord {
     /// - Parameter attributes: The dictionary returned by a Keychain query.
     public init(_ attributes: [String: AnyObject]) {
         service = (attributes[kSecAttrService as String] as? String) ?? ""
+        securityDomain = (attributes[kSecAttrSecurityDomain as String] as? String) ?? ""
+        accessGroup = attributes[kSecAttrAccessGroup as String] as? String
+        synchronizable = attributes[kSecAttrSynchronizable as String] as? Bool
         account = (attributes[kSecAttrAccount as String] as? String) ?? ""
         creation = attributes[kSecAttrCreationDate as String] as? Date
         lastUpdate = attributes[kSecAttrModificationDate as String] as? Date
@@ -88,6 +103,25 @@ public struct KeychainRecord {
         } else {
             authenticationType = nil
         }
+    }
+
+    /// Rebuilds the item's primary key without passing its attributes through a URL.
+    var internetPasswordCriteria: [KeychainCriterion] {
+        var criteria: [KeychainCriterion] = [
+            .securityClass(.internetPassword),
+            .securityDomain(securityDomain),
+            .account(account),
+            .urlHost(urlHost ?? ""),
+            .urlPort(urlPort ?? 0),
+            .urlPath(urlPath ?? ""),
+            .urlScheme(.from(urlScheme ?? "")),
+            .urlAuthenticationType(authenticationType ?? .other("")),
+            .synchronizable(synchronizable ?? false)
+        ]
+        if let accessGroup {
+            criteria.append(.accessGroup(accessGroup))
+        }
+        return criteria
     }
 }
 

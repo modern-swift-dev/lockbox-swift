@@ -104,15 +104,14 @@ public extension KeychainPassword {
 
     /// Returns handles for all internet-password items in a service.
     ///
-    /// Items without a URL representation are omitted because an internet-password
-    /// handle requires a URL. Returned handles preserve each item's URL, account,
-    /// authentication type, and the supplied access group.
+    /// Returned handles preserve the stored identity attributes directly, including
+    /// protocols that cannot be represented by the URL convenience API.
     ///
     /// - Parameters:
     ///   - service: The service namespace whose internet-password items to find. By
     ///     default, this is the main bundle identifier.
     ///   - accessGroup: An optional shared keychain access group used to limit the search.
-    /// - Returns: Handles for the matching internet-password items that have URLs.
+    /// - Returns: Handles for the matching internet-password items.
     ///   Returns an empty array when no items match.
     /// - Throws: ``KeychainError`` when the Security framework cannot search the keychain.
     static func allInternetPassword(
@@ -125,17 +124,8 @@ public extension KeychainPassword {
             service: service,
             accessGroup: accessGroup
         )
-        return accounts.compactMap {
-            guard let url = $0.url else {
-                return nil
-            }
-            return KeychainPassword.internet(
-                url: url,
-                authenticationType: $0.authenticationType ?? .default,
-                service: service,
-                account: $0.account,
-                accessGroup: accessGroup
-            )
+        return accounts.map {
+            KeychainPassword(criteria: $0.internetPasswordCriteria)
         }
     }
 }

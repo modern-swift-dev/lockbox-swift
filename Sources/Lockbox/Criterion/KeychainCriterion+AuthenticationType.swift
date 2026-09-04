@@ -21,6 +21,9 @@ public extension KeychainCriterion {
         /// The Security framework's default authentication type.
         case `default`
 
+        /// A Security-framework authentication value without a named case.
+        case other(String)
+
         /// The Security-framework value used in a Keychain query.
         var queryValue: String {
             switch self {
@@ -32,14 +35,14 @@ public extension KeychainCriterion {
                 case .httpDigest: kSecAttrAuthenticationTypeHTTPDigest as String
                 case .htmlForm: kSecAttrAuthenticationTypeHTMLForm as String
                 case .default: kSecAttrAuthenticationTypeDefault as String
+                case let .other(value): value
             }
         }
 
         /// Converts a Security-framework authentication-type value to its typed equivalent.
         ///
         /// - Parameter value: A value returned in `kSecAttrAuthenticationType`.
-        /// - Returns: The matching type, or ``KeychainCriterion/AuthenticationType/default``
-        ///   when the value is unknown.
+        /// - Returns: The matching type, preserving unrecognized values in `other`.
         static func from(_ value: String) -> AuthenticationType {
 
             if value == kSecAttrAuthenticationTypeNTLM as String {
@@ -67,7 +70,7 @@ public extension KeychainCriterion {
                 return .default
             }
 
-            return .default
+            return .other(value)
         }
 
     }

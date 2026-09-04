@@ -30,6 +30,34 @@ private func isKeychainAccessible() -> Bool {
 
 @Suite(.serialized) struct KeychainInternetPasswordTests {
 
+    @Test(arguments: [KeychainCriterion.InternetProtocol.ftp, .other(kSecAttrProtocolIMAP as String)])
+    func listedHandleReadsUpdatesAndDeletesOriginalItem(internetProtocol: KeychainCriterion.InternetProtocol) throws {
+        let service = "LockboxTests.enumeration.\(UUID().uuidString)"
+        let account = UUID().uuidString
+        let criteria: [KeychainCriterion] = [
+            .securityClass(.internetPassword),
+            .securityDomain(service),
+            .account(account),
+            .urlHost("example.invalid"),
+            .urlScheme(internetProtocol),
+            .urlAuthenticationType(.default),
+            .urlPort(0),
+            .urlPath("")
+        ]
+        defer { try? criteria.delete() }
+        try criteria.create(data: Data("original".utf8))
+        let handles = try KeychainPassword.allInternetPassword(service: service)
+        let handle = try #require(handles.first {
+            let query = $0.criteria.query as NSDictionary
+            return query[kSecAttrAccount as String] as? String == account
+        })
+        #expect(try handle.getString() == "original")
+        try handle.set(string: "updated")
+        #expect(try criteria.retrieve()?.data == Data("updated".utf8))
+        try handle.remove()
+        #expect(try !criteria.exists())
+    }
+
     private let testService = "com.slkeychain.internet.\(UUID().uuidString)"
 
     private func cleanup(service: String, account: String, url: URL) {
