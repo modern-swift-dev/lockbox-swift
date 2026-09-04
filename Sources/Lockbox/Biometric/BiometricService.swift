@@ -226,6 +226,9 @@ public final class BiometricService: BiometricServiceProtocol, Sendable {
                     }
 
                     let credentials: Credentials = try JSONDecoder().decode(Credentials.self, from: data)
+                    if case .biometricChanged(true) = result {
+                        return .biometricChanged(username: credentials.username, password: credentials.password)
+                    }
                     return .success(username: credentials.username, password: credentials.password)
                 case .failed,
                      .biometricChanged(false):

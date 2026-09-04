@@ -111,6 +111,31 @@ import Testing
         }
     }
 
+    @Test(arguments: [false, true]) func successfulSaveAndRetrievePreserveBiometricChange(changed: Bool) async throws {
+        let name = "BiometricServiceTests.success.\(UUID().uuidString)"
+        let authentication = MockLocalAuthenticationService(result: changed ? .biometricChanged(true) : .success)
+        let keychain = MockBiometricCredentialStore(authentication: authentication)
+        let service = BiometricService(
+            service: name,
+            localAuthenticationService: authentication,
+            keychainOverride: keychain
+        )
+        try await service.save(email: "user", password: "secret")
+        let result = try await service.retrieve()
+        switch result {
+            case let .success(username, password):
+                #expect(!changed)
+                #expect(username == "user")
+                #expect(password == "secret")
+            case let .biometricChanged(username, password):
+                #expect(changed)
+                #expect(username == "user")
+                #expect(password == "secret")
+        }
+        #expect(keychain.operations == [.write(afterEvaluations: 1), .read(afterEvaluations: 2)])
+        #expect(authentication.evaluationCount == 2)
+    }
+
 }
 
 private final class MockBiometricCredentialStore: BiometricCredentialStore, @unchecked Sendable {
