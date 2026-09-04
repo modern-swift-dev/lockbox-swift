@@ -111,6 +111,24 @@ import Testing
         }
     }
 
+    @Test func synchronizationIsRejectedBeforeAuthentication() async {
+        let authentication = MockLocalAuthenticationService(result: .success)
+        let service = BiometricService(
+            service: "BiometricServiceTests.sync.\(UUID().uuidString)",
+            synchronizable: true,
+            localAuthenticationService: authentication
+        )
+        do {
+            try await service.save(email: "user", password: "secret")
+            Issue.record("Expected unsupported synchronization")
+        } catch BiometricServiceError.synchronizationUnsupported {
+            #expect(authentication.evaluationCount == 0)
+            #expect(authentication.recordCount == 0)
+        } catch {
+            Issue.record("Unexpected error: \(error)")
+        }
+    }
+
     @Test(arguments: [false, true]) func successfulSaveAndRetrievePreserveBiometricChange(changed: Bool) async throws {
         let name = "BiometricServiceTests.success.\(UUID().uuidString)"
         let authentication = MockLocalAuthenticationService(result: changed ? .biometricChanged(true) : .success)

@@ -12,6 +12,9 @@ public enum BiometricServiceError: Swift.Error {
     /// Biometric authentication isn't configured on the device, or credentials are absent.
     case unconfigured
 
+    /// Device-only biometric credentials cannot synchronize through iCloud Keychain.
+    case synchronizationUnsupported
+
     /// Authentication or credential access failed.
     case failed
 

@@ -97,7 +97,8 @@ public final class BiometricService: BiometricServiceProtocol, Sendable {
     ///   - service: The keychain service name. By default, the main bundle identifier.
     ///   - account: The account name used to identify the keychain item.
     ///   - accessGroup: The keychain access group, or `nil` to use the app's default access.
-    ///   - synchronizable: Whether the keychain item is eligible for synchronization.
+    ///   - synchronizable: Must be `false`. Device-only biometric credentials cannot sync;
+    ///     `save` rejects `true` before authentication.
     ///   - localAuthenticationService: The local-authentication service used for prompts
     ///     and as the keychain authentication context.
     public convenience init(
@@ -157,9 +158,12 @@ public final class BiometricService: BiometricServiceProtocol, Sendable {
     ///   - email: The username or email address to store.
     ///   - password: The password to store.
     /// - Throws: ``BiometricServiceError`` when biometrics are unsupported, not
-    ///   configured, rejected, or unavailable.
+    ///   configured, rejected, or unavailable, or synchronization is requested.
     ///   Encoding, keychain, and biometric-baseline storage errors are wrapped in ``BiometricServiceError/underlying(_:)``.
     public func save(email: String, password: String) async throws {
+        guard !synchronizable else {
+            throw BiometricServiceError.synchronizationUnsupported
+        }
         guard supportedByDevice else {
             throw BiometricServiceError.unsupported
         }
