@@ -5,6 +5,14 @@ import Testing
 
 @Suite(.serialized) struct KeychainErrorTests {
 
+    @Test func descriptionSurvivesErrorErasureAndNSErrorBridging() {
+        let error: any Error = KeychainError.underlyingError(status: -25300, message: "Item not found")
+        #expect(error.localizedDescription == "-25300 - Item not found")
+        #expect((error as NSError).localizedDescription == "-25300 - Item not found")
+        let encodingError: any Error = KeychainError.encodingFailed
+        #expect(encodingError.localizedDescription == "encoding failed")
+    }
+
     @Test func encodingFailedLocalizedDescription() {
         let error = KeychainError.encodingFailed
         #expect(error.localizedDescription == "encoding failed")

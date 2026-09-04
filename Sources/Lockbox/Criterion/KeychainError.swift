@@ -2,7 +2,7 @@
 import Foundation
 
 /// Errors produced while encoding data or working with Keychain Services.
-public enum KeychainError: Swift.Error {
+public enum KeychainError: LocalizedError {
 
     /// The value could not be encoded into the data required by a Keychain operation.
     case encodingFailed
@@ -25,6 +25,11 @@ public enum KeychainError: Swift.Error {
                 }
                 return "\(status) - unknown error"
         }
+    }
+
+    /// Preserves the description when this value is handled as `any Error` or `NSError`.
+    public var errorDescription: String? {
+        localizedDescription
     }
 }
 
