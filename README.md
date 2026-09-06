@@ -2,14 +2,14 @@
 
 Lockbox is a small, type-safe Swift wrapper around Apple Keychain Services and Local Authentication. It stores generic and internet passwords, supports raw `Data`, builds keychain queries from Swift enum values, and provides an iOS biometric credential service.
 
-Read the [Lockbox documentation](https://modern-swift-dev.github.io/lockbox-swift/) for guides, examples, and API reference.
+Read the [Lockbox documentation](https://modern-swift-dev.github.io/docs/lockbox-swift/) for guides, examples, and API reference.
 
 ## Requirements
 
 - Swift 6
 - macOS 15+, iOS 18+, tvOS 18+, watchOS 10+, or visionOS 1+
 
-Some APIs have narrower platform availability. The [documentation hub](https://modern-swift-dev.github.io/lockbox-swift/documentation/) lists those limits.
+Some APIs have narrower platform availability. The [documentation hub](https://modern-swift-dev.github.io/docs/lockbox-swift/documentation/) lists those limits.
 
 ## Installation
 
@@ -53,9 +53,11 @@ try password.remove()
 
 `set(string:)` and `set(data:)` create an item or update an existing match. Read methods return `nil` when an item does not exist.
 
-See the [getting started guide](https://modern-swift-dev.github.io/lockbox-swift/documentation/getting-started/) for the complete workflow and the [examples](https://modern-swift-dev.github.io/lockbox-swift/examples/) for generic passwords, internet passwords, typed queries, and biometric credentials.
+See the [getting started guide](https://modern-swift-dev.github.io/docs/lockbox-swift/documentation/getting-started/) for the complete workflow and the [examples](https://modern-swift-dev.github.io/docs/lockbox-swift/examples/) for generic passwords, internet passwords, typed queries, and biometric credentials.
 
 ## Contributing
+
+Documentation sources remain in this repository. The [central documentation repository](https://github.com/modern-swift-dev/docs) builds and publishes the site daily. Local site builds write generated HTML to `.build/site/`.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for contributor instructions.
 

@@ -4,7 +4,7 @@ set -euo pipefail
 
 repository_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 website_directory="$repository_root/Website"
-published_directory="$repository_root/docs"
+published_directory="$repository_root/.build/site"
 staging_directory="$(mktemp -d "$repository_root/.site-build.XXXXXX")"
 site_output_directory="$staging_directory/site"
 
@@ -30,5 +30,6 @@ touch "$site_output_directory/.nojekyll"
 
 node "$repository_root/Scripts/check-site-links.mjs" "$site_output_directory"
 
+mkdir -p "$(dirname "$published_directory")"
 rm -rf "$published_directory"
 mv "$site_output_directory" "$published_directory"

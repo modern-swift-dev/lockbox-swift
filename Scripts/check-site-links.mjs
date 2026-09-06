@@ -2,7 +2,7 @@ import { readFile, readdir, stat } from "node:fs/promises";
 import path from "node:path";
 
 const [outputDirectory] = process.argv.slice(2);
-const repositoryBasePath = "/lockbox-swift";
+const repositoryBasePath = "/docs/lockbox-swift";
 
 if (!outputDirectory) {
   console.error("Usage: node Scripts/check-site-links.mjs <published-directory>");

@@ -4,7 +4,7 @@ set -euo pipefail
 
 output_directory="${1:?Pass an output directory for generated DocC content.}"
 module_name="Lockbox"
-hosting_base_path="lockbox-swift/documentation/lockbox"
+hosting_base_path="docs/lockbox-swift/documentation/lockbox"
 
 mkdir -p "$output_directory"
 

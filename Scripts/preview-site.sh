@@ -3,7 +3,7 @@
 set -euo pipefail
 
 repository_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-published_directory="$repository_root/docs"
+published_directory="$repository_root/.build/site"
 preview_directory="$(mktemp -d "$repository_root/.site-preview.XXXXXX")"
 port="${PORT:-8000}"
 
@@ -17,6 +17,7 @@ if [[ ! -f "$published_directory/index.html" ]]; then
     exit 1
 fi
 
-ln -s "$published_directory" "$preview_directory/lockbox-swift"
-echo "Previewing at http://localhost:$port/lockbox-swift/"
+mkdir -p "$preview_directory/docs"
+ln -s "$published_directory" "$preview_directory/docs/lockbox-swift"
+echo "Previewing at http://localhost:$port/docs/lockbox-swift/"
 python3 -m http.server "$port" --directory "$preview_directory"

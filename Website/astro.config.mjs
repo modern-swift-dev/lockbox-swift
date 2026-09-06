@@ -3,7 +3,7 @@ import tailwindcss from "@tailwindcss/vite";
 
 export default defineConfig({
   site: "https://modern-swift-dev.github.io",
-  base: "/lockbox-swift",
+  base: "/docs/lockbox-swift",
   output: "static",
   vite: {
     plugins: [tailwindcss()]
