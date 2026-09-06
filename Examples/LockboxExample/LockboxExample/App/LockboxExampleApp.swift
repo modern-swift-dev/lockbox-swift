@@ -225,7 +225,8 @@ private final class ExampleViewModel: ObservableObject {
         do {
             let result = try await makeBiometricService().retrieve()
             switch result {
-                case let .success(username, password), let .biometricChanged(username, password):
+                case let .success(username, password),
+                     let .biometricChanged(username, password):
                     biometricEmail = username
                     biometricPassword = password
                     reportSuccess("Biometric credentials retrieved into the secure fields.")
