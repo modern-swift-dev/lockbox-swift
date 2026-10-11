@@ -1,22 +1,7 @@
-#if os(macOS)
+#if canImport(Security)
     import Foundation
     @testable import Lockbox
     import Testing
-
-    /// Checks if the keychain is accessible (has proper entitlements)
-    private func isKeychainAccessible() -> Bool {
-        let testCriteria: [KeychainCriterion] = [
-            .securityClass(.genericPassword),
-            .service("com.slkeychain.entitlement.check"),
-            .account("test")
-        ]
-        do {
-            _ = try testCriteria.exists()
-            return true
-        } catch {
-            return error != .missingEntitlement
-        }
-    }
 
     @Suite(.serialized) struct KeychainFindAllTests {
 
@@ -27,19 +12,13 @@
             try? password.remove()
         }
 
-        private func skipIfNoKeychainAccess() throws {
-            try #require(isKeychainAccessible(), "Keychain access not available (missing entitlements)")
-        }
-
-        @Test func findAllReturnsEmptyArrayWhenNoItems() throws {
-            try skipIfNoKeychainAccess()
+        @Test(.requiresKeychain) func findAllReturnsEmptyArrayWhenNoItems() throws {
             let service = "empty_service_\(UUID().uuidString)"
             let records = try KeychainCriterion.findAll(service: service)
             #expect(records.isEmpty)
         }
 
-        @Test func findAllReturnsSingleItem() throws {
-            try skipIfNoKeychainAccess()
+        @Test(.requiresKeychain) func findAllReturnsSingleItem() throws {
             let account = "findone_\(UUID().uuidString)"
             let password = KeychainPassword.generic(service: testService, account: account)
 
@@ -55,8 +34,7 @@
             #expect(found?.service == testService)
         }
 
-        @Test func findAllReturnsMultipleItems() throws {
-            try skipIfNoKeychainAccess()
+        @Test(.requiresKeychain) func findAllReturnsMultipleItems() throws {
             let account1 = "find1_\(UUID().uuidString)"
             let account2 = "find2_\(UUID().uuidString)"
             let password1 = KeychainPassword.generic(service: testService, account: account1)
@@ -79,8 +57,7 @@
             #expect(found2 != nil)
         }
 
-        @Test func allGenericPasswordReturnsKeychainPasswords() throws {
-            try skipIfNoKeychainAccess()
+        @Test(.requiresKeychain) func allGenericPasswordReturnsKeychainPasswords() throws {
             let account1 = "allgen1_\(UUID().uuidString)"
             let account2 = "allgen2_\(UUID().uuidString)"
             let password1 = KeychainPassword.generic(service: testService, account: account1)
