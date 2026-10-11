@@ -86,7 +86,7 @@ Passwords, typed queries, and Local Authentication
 Passwords and typed queries
 
 - **tvOS 18+ and watchOS 10+**
-Typed Security framework queries
+Passwords and typed queries
 
 Open source
 

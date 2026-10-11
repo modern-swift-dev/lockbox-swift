@@ -1,5 +1,5 @@
 #if canImport(Security)
-    #if !os(watchOS) && !os(tvOS)
+    #if canImport(LocalAuthentication) && !os(tvOS)
         import Foundation
         import LocalAuthentication
 

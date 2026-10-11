@@ -34,7 +34,17 @@
         /// are applied on creation and replaced on update.
         public let attributes: [KeychainCriterion]
 
-        init(criteria: [KeychainCriterion], attributes: [KeychainCriterion] = []) {
+        /// Creates a handle from explicit keychain criteria.
+        ///
+        /// Use this initializer when the password factories don't express the item you
+        /// need. Include the item's class and identifying attributes in `criteria`.
+        ///
+        /// - Parameters:
+        ///   - criteria: Criteria that identify the item and configure its operations.
+        ///   - attributes: Attributes applied when the item is written but not used to
+        ///     find it, such as ``KeychainCriterion/accessible(_:)`` or
+        ///     ``KeychainCriterion/accessControl(_:)``.
+        public init(criteria: [KeychainCriterion], attributes: [KeychainCriterion] = []) {
             self.criteria = criteria
             self.attributes = attributes
         }

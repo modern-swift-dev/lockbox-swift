@@ -15,9 +15,9 @@ This guide uses a generic password. It is the smallest useful Lockbox workflow, 
 
 - Swift 6
 
-- macOS 15+, iOS 18+, or visionOS 1+ for this `KeychainPassword` workflow
+- macOS 15+, iOS 18+, tvOS 18+, watchOS 10+, or visionOS 1+
 
-- tvOS 18+ and watchOS 10+ can use the lower-level `KeychainCriterion` API
+- tvOS has no Local Authentication, so its password factories have no `contextProvider` parameter
 
 - An app target with the platform capabilities it needs
 
