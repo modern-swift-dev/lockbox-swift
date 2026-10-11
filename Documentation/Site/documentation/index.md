@@ -15,6 +15,10 @@ The guides explain Lockbox-specific behavior. The DocC reference documents the p
 
 Install the package, save a password, read it, update it, and remove it.
 
+## [Migrating to Lockbox 2](/docs/lockbox-swift/documentation/migrating-to-2/)
+
+Update source and stored items from Lockbox 1.x.
+
 ## [Lockbox API reference](/docs/lockbox-swift/documentation/lockbox/documentation/lockbox/)
 
 Browse generated DocC documentation for the public Lockbox module.
