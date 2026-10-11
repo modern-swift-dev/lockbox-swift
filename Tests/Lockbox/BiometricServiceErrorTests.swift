@@ -125,9 +125,13 @@
                 let laError = LAError(.userFallback)
                 let error = BiometricServiceError.from(error: laError)
                 #expect(({
-                    if case .failed = error {
+                    if case .userFallback = error {
                         return true
                     }; return false })())
+            }
+
+            @Test func userFallbackIsNotLockedOut() {
+                #expect(!BiometricServiceError.userFallback.isLockedOut)
             }
 
             @Test func fromLAErrorAuthenticationFailed() {

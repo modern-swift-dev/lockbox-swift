@@ -18,6 +18,11 @@
             /// Authentication or credential access failed.
             case failed
 
+            /// The user chose the fallback button instead of authenticating.
+            ///
+            /// Offer the app's own sign-in, such as a password form.
+            case userFallback
+
             /// Biometric authentication is locked after too many failed attempts.
             case lockedOut
 
@@ -72,8 +77,9 @@
                          .userCancel,
                          .systemCancel:
                         return .cancelled
-                    case .userFallback,
-                         .invalidContext,
+                    case .userFallback:
+                        return .userFallback
+                    case .invalidContext,
                          .authenticationFailed,
                          .invalidDimensions:
                         return .failed
