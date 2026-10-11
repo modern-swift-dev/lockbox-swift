@@ -3,7 +3,7 @@
 
     public extension KeychainCriterion {
         /// Authentication mechanisms for internet-password Keychain items.
-        enum AuthenticationType: Sendable {
+        enum AuthenticationType: Sendable, Hashable {
             /// NTLM authentication.
             case ntlm
             /// Microsoft Network authentication.

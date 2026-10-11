@@ -4,7 +4,7 @@
     public extension KeychainCriterion {
 
         /// Supported internet protocols for internet-password Keychain items.
-        enum InternetProtocol: Sendable {
+        enum InternetProtocol: Sendable, Hashable {
             /// Hypertext Transfer Protocol.
             case http
             /// Hypertext Transfer Protocol Secure.

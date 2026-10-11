@@ -20,7 +20,7 @@
         public final class BiometricService: BiometricServiceProtocol, Sendable {
 
             /// The encoded representation of credentials stored in the keychain.
-            public struct Credentials: Codable {
+            public struct Credentials: Codable, Sendable, Equatable {
                 /// The username associated with the stored credential.
                 public let username: String
 

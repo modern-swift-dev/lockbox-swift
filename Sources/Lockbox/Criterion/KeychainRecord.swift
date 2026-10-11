@@ -7,7 +7,7 @@
     /// receive them from ``KeychainCriterion/findAll(type:service:accessGroup:accessibility:useDataProtectionKeychain:)``
     /// and `retrieve()`. Missing string attributes are represented as empty
     /// strings; optional values were absent from the result.
-    public struct KeychainRecord {
+    public struct KeychainRecord: Sendable, Hashable {
 
         /// The item's service attribute (`kSecAttrService`), or an empty string when absent.
         public let service: String

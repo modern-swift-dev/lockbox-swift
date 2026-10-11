@@ -2,7 +2,7 @@
     import Foundation
 
     /// Credentials returned by a biometric authentication operation.
-    public enum BiometricServiceResult {
+    public enum BiometricServiceResult: Sendable, Equatable {
         /// The operation returned credentials without reporting a biometric-set change.
         ///
         /// - Parameters:
