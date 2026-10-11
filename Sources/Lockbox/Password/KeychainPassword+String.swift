@@ -8,7 +8,7 @@
         /// - Returns: The decoded string, `nil` when no item matches ``criteria``, or
         ///   `nil` when the stored data is not valid UTF-8.
         /// - Throws: ``KeychainError`` when the Security framework cannot retrieve the item.
-        func getString() throws -> String? {
+        func getString() throws(KeychainError) -> String? {
             guard let data = try getData() else {
                 return nil
             }
@@ -24,7 +24,7 @@
         /// - Parameter string: The string to encode as UTF-8 and store in the keychain.
         /// - Throws: ``KeychainError`` when the Security framework cannot determine
         ///   whether the item exists, create it, or update it.
-        func set(string: String) throws {
+        func set(string: String) throws(KeychainError) {
             if let data = string.data(using: .utf8) {
                 try write(data: data)
             }

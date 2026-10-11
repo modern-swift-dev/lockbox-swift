@@ -151,7 +151,7 @@
             service: String,
             accessGroup: String? = nil,
             useDataProtectionKeychain: Bool = false
-        ) throws -> [KeychainPassword] {
+        ) throws(KeychainError) -> [KeychainPassword] {
             let accounts = try KeychainCriterion.findAll(
                 type: .internetPassword,
                 service: service,

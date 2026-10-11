@@ -53,11 +53,11 @@
         ///
         /// - Throws: ``KeychainError`` when the Security framework cannot delete the
         ///   matching item, including when no matching item exists.
-        public func remove() throws {
+        public func remove() throws(KeychainError) {
             try criteria.delete()
         }
 
-        func retrieve() throws -> KeychainRecord? {
+        func retrieve() throws(KeychainError) -> KeychainRecord? {
             try criteria.retrieve()
         }
 
@@ -118,10 +118,10 @@
         }
 
         /// Creates the item, or updates it when an equivalent item already exists.
-        func write(data: Data) throws {
+        func write(data: Data) throws(KeychainError) {
             try [KeychainCriterion].upsert(
-                create: { try createCriteria.create(data: data) },
-                update: { try criteria.update(attributes: updateAttributes(data: data)) }
+                create: { () throws(KeychainError) in try createCriteria.create(data: data) },
+                update: { () throws(KeychainError) in try criteria.update(attributes: updateAttributes(data: data)) }
             )
         }
     }

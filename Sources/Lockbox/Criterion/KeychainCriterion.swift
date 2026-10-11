@@ -158,7 +158,7 @@
             accessGroup: String?,
             accessibility: Accessibility? = nil,
             useDataProtectionKeychain: Bool = false
-        ) throws -> [KeychainRecord] {
+        ) throws(KeychainError) -> [KeychainRecord] {
             var criteria = findAllCriteria(
                 type: type,
                 service: service,
@@ -241,7 +241,7 @@
         /// - Parameter data: The bytes stored as `kSecValueData`.
         /// - Throws: ``KeychainError`` if creation
         ///   fails, including when an equivalent item already exists.
-        func create(data: Data) throws {
+        func create(data: Data) throws(KeychainError) {
             var createQuery: [KeychainCriterion] = []
             createQuery.append(contentsOf: self)
             createQuery.append(.data(data))
@@ -265,7 +265,7 @@
             description: String? = nil,
             comment: String? = nil,
             label: String? = nil
-        ) throws {
+        ) throws(KeychainError) {
             var attributesToUpdate: [KeychainCriterion] = [.data(data)]
 
             if let description {
@@ -284,7 +284,7 @@
         }
 
         /// Replaces the given attributes on every item matching these criteria.
-        internal func update(attributes: [KeychainCriterion]) throws {
+        internal func update(attributes: [KeychainCriterion]) throws(KeychainError) {
             let status = SecItemUpdate(query, attributes.query)
             if !status.isSuccessful {
                 throw KeychainError(status: status)
@@ -295,7 +295,7 @@
         ///
         /// - Throws: ``KeychainError`` if no matching
         ///   item exists or the Security framework cannot delete it.
-        func delete() throws {
+        func delete() throws(KeychainError) {
             let status = SecItemDelete(query)
             if !status.isSuccessful {
                 throw KeychainError(status: status)
@@ -310,18 +310,21 @@
         /// - Parameter data: The bytes to create or use as replacement data.
         /// - Throws: ``KeychainError`` if the create
         ///   or update operation fails.
-        func createOrUpdate(data: Data) throws {
+        func createOrUpdate(data: Data) throws(KeychainError) {
             try Self.upsert(
-                create: { try create(data: data) },
-                update: { try update(data: data) }
+                create: { () throws(KeychainError) in try create(data: data) },
+                update: { () throws(KeychainError) in try update(data: data) }
             )
         }
 
         /// Keeps duplicate-item recovery independently testable without Keychain entitlements.
-        internal static func upsert(create: () throws -> Void, update: () throws -> Void) throws {
-            do {
+        internal static func upsert(
+            create: () throws(KeychainError) -> Void,
+            update: () throws(KeychainError) -> Void
+        ) throws(KeychainError) {
+            do throws(KeychainError) {
                 try create()
-            } catch KeychainError.duplicateItem {
+            } catch .duplicateItem {
                 try update()
             }
         }
@@ -331,7 +334,7 @@
         /// - Returns: `true` when an item is found; otherwise, `false`.
         /// - Throws: ``KeychainError`` when the
         ///   Security framework cannot perform the lookup.
-        func exists() throws -> Bool {
+        func exists() throws(KeychainError) -> Bool {
             // Build a query to find the item that matches the service, account and
             // access group
             var items = [KeychainCriterion]()
@@ -365,7 +368,7 @@
         ///   cannot be represented as item attributes.
         /// - Throws: ``KeychainError`` when the
         ///   Security framework cannot perform the lookup.
-        func retrieve() throws -> KeychainRecord? {
+        func retrieve() throws(KeychainError) -> KeychainRecord? {
 
             // Build a query to find the item that matches the service, account and
             // access group

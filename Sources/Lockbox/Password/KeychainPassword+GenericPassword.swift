@@ -138,7 +138,7 @@
             service: String,
             accessGroup: String? = nil,
             useDataProtectionKeychain: Bool = false
-        ) throws -> [KeychainPassword] {
+        ) throws(KeychainError) -> [KeychainPassword] {
             let records = try KeychainCriterion.findAll(
                 type: .genericPassword,
                 service: service,

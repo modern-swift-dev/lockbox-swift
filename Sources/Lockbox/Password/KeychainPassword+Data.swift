@@ -7,7 +7,7 @@
         /// - Returns: The stored data, or `nil` when no item matches ``criteria``.
         /// - Throws: ``KeychainError`` when the Security framework cannot retrieve the
         ///   item, for example because authentication or keychain access fails.
-        func getData() throws -> Data? {
+        func getData() throws(KeychainError) -> Data? {
             try retrieve()?.data
         }
 
@@ -19,7 +19,7 @@
         /// - Parameter data: The data to store securely in the keychain.
         /// - Throws: ``KeychainError`` when the Security framework cannot determine
         ///   whether the item exists, create it, or update it.
-        func set(data: Data) throws {
+        func set(data: Data) throws(KeychainError) {
             try write(data: data)
         }
     }
