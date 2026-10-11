@@ -25,9 +25,7 @@
         /// - Throws: ``KeychainError`` when the Security framework cannot determine
         ///   whether the item exists, create it, or update it.
         func set(string: String) throws(KeychainError) {
-            if let data = string.data(using: .utf8) {
-                try write(data: data)
-            }
+            try write(data: Data(string.utf8))
         }
 
     }

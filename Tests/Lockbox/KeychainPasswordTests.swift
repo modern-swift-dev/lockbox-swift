@@ -182,6 +182,19 @@
                 }
             }
 
+            @Test(arguments: ["", "héllo wörld 🔐", "line\nbreak\u{0}nul"])
+            func stringRoundTripsAsUTF8(value: String) throws {
+                try skipIfNoKeychainAccess()
+                let account = "utf8_\(UUID().uuidString)"
+                let password = KeychainPassword.generic(service: testService, account: account)
+                defer { cleanup(service: testService, account: account) }
+
+                try password.set(string: value)
+
+                #expect(try password.getString() == value)
+                #expect(try password.getData() == Data(value.utf8))
+            }
+
             @Test func getStringReturnsNilWhenNotExists() throws {
                 try skipIfNoKeychainAccess()
                 let account = "nonexistent_\(UUID().uuidString)"
