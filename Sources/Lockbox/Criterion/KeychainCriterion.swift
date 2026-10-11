@@ -21,7 +21,11 @@
     /// ]
     /// try criteria.create(data: myData)
     /// ```
-    public enum KeychainCriterion: Sendable {
+    ///
+    /// `KeychainCriterion` is `Sendable` so criteria can be stored in sendable handles.
+    /// The `SecAccessControl` and `LAContext` payloads aren't marked `Sendable` by their
+    /// frameworks; Lockbox never mutates them and only passes them to Keychain Services.
+    public enum KeychainCriterion: @unchecked Sendable {
 
         /// Restricts the query to an item class (`kSecClass`).
         case securityClass(SecurityClass)

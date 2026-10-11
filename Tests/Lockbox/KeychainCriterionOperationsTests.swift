@@ -15,13 +15,8 @@
             do {
                 _ = try testCriteria.exists()
                 return true
-            } catch let error as KeychainError {
-                if error == .missingEntitlement {
-                    return false
-                }
-                return true
             } catch {
-                return true
+                return error != .missingEntitlement
             }
         }
 

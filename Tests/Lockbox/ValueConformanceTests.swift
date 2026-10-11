@@ -13,6 +13,8 @@
             requireSendable(BiometricServiceResult.self)
             requireSendable(KeychainCriterion.AuthenticationType.self)
             requireSendable(KeychainCriterion.InternetProtocol.self)
+            requireSendable(KeychainCriterion.self)
+            requireSendable(KeychainPassword.self)
         }
 
         @Test func recordsWithSameAttributesAreEqual() {
@@ -50,6 +52,14 @@
             #expect(KeychainCriterion.InternetProtocol.https != .http)
         }
     }
+
+    #if os(macOS) || os(iOS)
+        extension ValueConformanceTests {
+            @Test func localAuthenticationServiceIsSendable() {
+                requireSendable(LocalAuthenticationService.self)
+            }
+        }
+    #endif
 
     #if os(iOS)
         extension ValueConformanceTests {

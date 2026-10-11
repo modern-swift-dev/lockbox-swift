@@ -44,9 +44,6 @@
             /// Is it synchronizable through iCloud?
             private let synchronizable: Bool
 
-            /// Access Control
-            private let accessControl: SecAccessControl
-
             /// The Keychain Item that wraps the credentials
             private let keychain: any BiometricCredentialStore
 
@@ -138,19 +135,12 @@
                 self.localAuthenticationService = localAuthenticationService
                 baseline = .forItem(service: service, account: account, accessGroup: accessGroup, in: baselineDirectory)
 
-                accessControl = SecAccessControlCreateWithFlags(
-                    kCFAllocatorDefault,
-                    kSecAttrAccessibleWhenPasscodeSetThisDeviceOnly,
-                    .biometryCurrentSet,
-                    nil
-                    // swiftlint:disable:next force_unwrapping
-                )!
                 keychain = keychainOverride ?? KeychainPassword.generic(
                     service: service,
                     account: account,
                     accessGroup: accessGroup,
                     synchronizable: synchronizable,
-                    accessControl: accessControl,
+                    accessControl: Self.makeAccessControl(),
                     contextProvider: { localAuthenticationService.context }
                 )
             }
@@ -179,7 +169,7 @@
                 }
 
                 let result = await localAuthenticationService.evaluate(
-                    access: accessControl,
+                    access: Self.makeAccessControl(),
                     operation: .createItem,
                     reason: nil
                 )
@@ -222,7 +212,7 @@
                     throw BiometricServiceError.unconfigured
                 }
                 let result = await localAuthenticationService.evaluate(
-                    access: accessControl,
+                    access: Self.makeAccessControl(),
                     operation: .useItem,
                     reason: nil
                 )
@@ -258,6 +248,19 @@
             public func forget() {
                 try? keychain.remove()
                 try? baseline.remove()
+            }
+
+            /// Creates the access control that protects the credentials.
+            ///
+            /// A new object is created for each use, so none is shared across concurrency domains.
+            private nonisolated static func makeAccessControl() -> SecAccessControl {
+                SecAccessControlCreateWithFlags(
+                    kCFAllocatorDefault,
+                    kSecAttrAccessibleWhenPasscodeSetThisDeviceOnly,
+                    .biometryCurrentSet,
+                    nil
+                    // swiftlint:disable:next force_unwrapping
+                )!
             }
 
             /// Compares the current biometric state with the state recorded at save time.

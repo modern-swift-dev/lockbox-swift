@@ -3,11 +3,7 @@
 
     #if canImport(LocalAuthentication) && !os(tvOS)
         import LocalAuthentication
-
-        extension LAContext: @unchecked @retroactive Sendable {}
     #endif
-
-    extension SecAccessControl: @unchecked @retroactive Sendable {}
 
     #if canImport(LocalAuthentication) && !os(watchOS) && !os(tvOS) && !os(visionOS)
         import Foundation
@@ -48,17 +44,10 @@
                 operation: LAAccessControlOperation,
                 localizedReason: String
             ) async -> PolicyEvaluationResult {
-                await withCheckedContinuation { [weak self] continuation in
-                    guard let self else {
-                        return continuation.resume(returning: .failed)
-                    }
-                    self.evaluateAccessControl(accessControl, operation: operation, localizedReason: localizedReason, reply: { [weak self] result, error in
-                        guard let self else {
-                            return continuation.resume(returning: .failed)
-                        }
-
+                await withCheckedContinuation { continuation in
+                    evaluateAccessControl(accessControl, operation: operation, localizedReason: localizedReason) { result, error in
                         continuation.resume(returning: PolicyEvaluationResult.from(result: result, error: error))
-                    })
+                    }
                 }
             }
 
@@ -74,14 +63,8 @@
                 operation: LAAccessControlOperation,
                 reason: String
             ) async -> PolicyEvaluationResult {
-                await withCheckedContinuation { [weak self] continuation in
-                    guard let self else {
-                        return continuation.resume(returning: .failed)
-                    }
-                    self.evaluatePolicy(policy, localizedReason: reason) { [weak self] result, error in
-                        guard let self else {
-                            return continuation.resume(returning: .failed)
-                        }
+                await withCheckedContinuation { continuation in
+                    evaluatePolicy(policy, localizedReason: reason) { result, error in
                         continuation.resume(returning: PolicyEvaluationResult.from(result: result, error: error))
                     }
                 }
