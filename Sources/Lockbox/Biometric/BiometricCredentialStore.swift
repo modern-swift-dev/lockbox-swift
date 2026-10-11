@@ -1,4 +1,4 @@
-#if canImport(Security) && os(iOS)
+#if canImport(Security) && (os(iOS) || os(macOS))
     import Foundation
     import LocalAuthentication
 
@@ -30,7 +30,8 @@
                 kSecAttrSynchronizable as String: synchronizable,
                 kSecReturnAttributes as String: true,
                 kSecMatchLimit as String: kSecMatchLimitOne,
-                kSecUseAuthenticationContext as String: context
+                kSecUseAuthenticationContext as String: context,
+                kSecUseDataProtectionKeychain as String: true
             ]
             if let accessGroup {
                 query[kSecAttrAccessGroup as String] = accessGroup

@@ -61,7 +61,7 @@
         }
     #endif
 
-    #if os(iOS)
+    #if os(iOS) || os(macOS)
         extension ValueConformanceTests {
             @Test func credentialsAreSendableAndEquatable() {
                 requireSendable(BiometricService.Credentials.self)

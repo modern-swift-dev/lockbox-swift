@@ -9,7 +9,7 @@ Documentation
 
 # Start with the API you need.
 
-The guides explain Lockbox-specific behavior. The DocC reference documents the public Lockbox symbols available in a macOS package build. The examples also cover the iOS-only biometric service.
+The guides explain Lockbox-specific behavior. The DocC reference documents the public Lockbox symbols available in a macOS package build. The examples also cover the biometric service for iOS and macOS.
 
 ## [Getting started](/docs/lockbox-swift/documentation/getting-started/)
 
@@ -33,4 +33,4 @@ Build lower-level queries when the password factories do not express your operat
 
 ## [Local authentication](/docs/lockbox-swift/examples/#biometrics)
 
-Evaluate a policy and protect iOS credentials with biometrics.
+Evaluate a policy and protect iOS and macOS credentials with biometrics.

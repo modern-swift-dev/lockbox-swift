@@ -70,7 +70,7 @@ Build create, update, find, and delete operations from enum values.
 
 ### [Biometrics](/docs/lockbox-swift/examples/)
 
-Save iOS credentials protected by the current biometric enrollment.
+Save iOS and macOS credentials protected by the current biometric enrollment.
 
 Platform support
 
@@ -80,7 +80,7 @@ Platform support
 Passwords, typed queries, Local Authentication, and biometrics
 
 - **macOS 15+**
-Passwords, typed queries, and Local Authentication
+Passwords, typed queries, Local Authentication, and biometrics
 
 - **visionOS 1+**
 Passwords and typed queries

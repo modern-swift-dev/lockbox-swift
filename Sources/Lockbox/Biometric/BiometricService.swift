@@ -1,5 +1,5 @@
 #if canImport(Security)
-    #if os(iOS)
+    #if os(iOS) || os(macOS)
         import Foundation
         import LocalAuthentication
         import os.log
@@ -8,6 +8,9 @@
         ///
         /// `BiometricService` protects a generic-password item with the device's current
         /// biometric set. Saving and retrieving credentials prompts for local authentication.
+        ///
+        /// On macOS the item is stored in the data protection keychain, which requires a
+        /// signed app with a keychain access group.
         ///
         /// Example:
         /// ```swift
@@ -45,7 +48,7 @@
             private let synchronizable: Bool
 
             /// The Keychain Item that wraps the credentials
-            private let keychain: any BiometricCredentialStore
+            let keychain: any BiometricCredentialStore
 
             /// The biometric state recorded when these credentials were saved
             private let baseline: BiometricBaseline
@@ -122,6 +125,8 @@
                         account: account,
                         accessGroup: accessGroup,
                         synchronizable: synchronizable,
+                        // Access-controlled items require the data protection keychain on macOS.
+                        useDataProtectionKeychain: true,
                         accessControl: Self.makeAccessControl(),
                         contextProvider: { localAuthenticationService.context }
                     ),

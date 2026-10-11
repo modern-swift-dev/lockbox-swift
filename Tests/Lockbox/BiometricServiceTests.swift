@@ -1,5 +1,5 @@
 #if canImport(Security)
-    #if os(iOS)
+    #if os(iOS) || os(macOS)
         import Foundation
         import LocalAuthentication
         @testable import Lockbox
@@ -140,9 +140,20 @@
                 #expect(query[kSecReturnData as String] == nil)
                 #expect(query[kSecReturnAttributes as String] as? Bool == true)
                 #expect(query[kSecAttrAccessGroup as String] as? String == "group.example")
+                #expect(query[kSecUseDataProtectionKeychain as String] as? Bool == true)
                 let context = try #require(query[kSecUseAuthenticationContext as String] as? LAContext)
                 #expect(context.interactionNotAllowed)
                 #expect(context !== authentication.context)
+            }
+
+            @Test func credentialsUseTheDataProtectionKeychain() throws {
+                let service = makeService(authentication: MockLocalAuthenticationService(result: .success))
+                let store = try #require(service.keychain as? KeychainBiometricCredentialStore)
+
+                let query = try #require(store.password.criteria.query as? [String: AnyObject])
+                #expect(query[kSecUseDataProtectionKeychain as String] as? Bool == true)
+                let createQuery = try #require(store.password.createCriteria.query as? [String: AnyObject])
+                #expect(createQuery[kSecAttrAccessControl as String] != nil)
             }
 
             @Test func itemsThatNeedInteractionStillExist() {

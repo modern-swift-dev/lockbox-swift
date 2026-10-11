@@ -91,9 +91,9 @@ if try criteria.exists(), let record = try criteria.retrieve() {
 
 <a id="biometrics"></a>
 
-## Biometric credentials on iOS
+## Biometric credentials on iOS and macOS
 
-Check device support and configuration in your app before showing this path. Keep a non-biometric recovery route for users who cannot authenticate with the enrolled set.
+Check device support and configuration in your app before showing this path. Keep a non-biometric recovery route for users who cannot authenticate with the enrolled set. On macOS, the credentials live in the data protection keychain, so the app must be signed with a keychain access group.
 
 Biometric service
 

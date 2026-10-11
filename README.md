@@ -1,6 +1,6 @@
 # Lockbox
 
-Lockbox is a small, type-safe Swift wrapper around Apple Keychain Services and Local Authentication. It stores generic and internet passwords, supports raw `Data`, builds keychain queries from Swift enum values, and provides an iOS biometric credential service.
+Lockbox is a small, type-safe Swift wrapper around Apple Keychain Services and Local Authentication. It stores generic and internet passwords, supports raw `Data`, builds keychain queries from Swift enum values, and provides a biometric credential service for iOS and macOS.
 
 Read the [Lockbox documentation](https://modern-swift-dev.github.io/docs/lockbox-swift/) for guides, examples, and API reference.
 
