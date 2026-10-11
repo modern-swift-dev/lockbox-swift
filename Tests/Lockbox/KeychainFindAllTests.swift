@@ -39,7 +39,7 @@
         @Test func findAllReturnsEmptyArrayWhenNoItems() throws {
             try skipIfNoKeychainAccess()
             let service = "empty_service_\(UUID().uuidString)"
-            let records = try KeychainCriterion.findAll(service: service, accessGroup: nil)
+            let records = try KeychainCriterion.findAll(service: service)
             #expect(records.isEmpty)
         }
 

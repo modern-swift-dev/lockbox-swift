@@ -155,7 +155,7 @@
         static func findAll(
             type: KeychainCriterion.SecurityClass = .genericPassword,
             service: String,
-            accessGroup: String?,
+            accessGroup: String? = nil,
             accessibility: Accessibility? = nil,
             useDataProtectionKeychain: Bool = false
         ) throws(KeychainError) -> [KeychainRecord] {
