@@ -10,7 +10,7 @@
         ///   - password: The stored password.
         case success(username: String, password: String)
 
-        /// The operation returned credentials after detecting a change to the enrolled biometrics.
+        /// The operation returned credentials, but the enrolled biometrics changed after they were saved.
         ///
         /// - Parameters:
         ///   - username: The stored username.

@@ -6,17 +6,46 @@
         import Testing
 
         @Suite(.serialized)
-        @MainActor struct BiometricServiceTests {
+        @MainActor final class BiometricServiceTests {
+
+            /// A temporary Application Support stand-in, so tests never touch real baselines.
+            private let baselineDirectory = FileManager.default.temporaryDirectory
+                .appendingPathComponent("BiometricServiceTests-\(UUID().uuidString)", isDirectory: true)
+
+            deinit {
+                try? FileManager.default.removeItem(at: baselineDirectory)
+            }
+
+            private func makeService(
+                account: String = "credentials",
+                synchronizable: Bool = false,
+                authentication: MockLocalAuthenticationService,
+                keychain: MockBiometricCredentialStore? = nil
+            ) -> BiometricService {
+                BiometricService(
+                    service: "BiometricServiceTests",
+                    account: account,
+                    synchronizable: synchronizable,
+                    localAuthenticationService: authentication,
+                    keychainOverride: keychain,
+                    baselineDirectory: baselineDirectory
+                )
+            }
+
+            private func baseline(account: String = "credentials") -> BiometricBaseline {
+                .forItem(service: "BiometricServiceTests", account: account, accessGroup: nil, in: baselineDirectory)
+            }
+
+            private func baselineExists(account: String = "credentials") -> Bool {
+                FileManager.default.fileExists(atPath: baseline(account: account).fileURL.path)
+            }
 
             @Test func propertiesReflectLocalAuthenticationService() {
                 let localAuthentication = MockLocalAuthenticationService(
                     supportedType: .faceID,
                     isConfigured: true
                 )
-                let service = BiometricService(
-                    service: "BiometricServiceTests.properties.\(UUID().uuidString)",
-                    localAuthenticationService: localAuthentication
-                )
+                let service = makeService(authentication: localAuthentication)
 
                 #expect(service.supportedType == .faceID)
                 #expect(service.supportedByDevice)
@@ -28,10 +57,7 @@
                     supportedType: .none,
                     isConfigured: true
                 )
-                let service = BiometricService(
-                    service: "BiometricServiceTests.unsupported.\(UUID().uuidString)",
-                    localAuthenticationService: localAuthentication
-                )
+                let service = makeService(authentication: localAuthentication)
 
                 await #expect(throws: BiometricServiceError.self) {
                     try await service.save(email: "user@example.com", password: "secret")
@@ -46,10 +72,7 @@
                     supportedType: .faceID,
                     isConfigured: false
                 )
-                let service = BiometricService(
-                    service: "BiometricServiceTests.unconfigured.\(UUID().uuidString)",
-                    localAuthenticationService: localAuthentication
-                )
+                let service = makeService(authentication: localAuthentication)
 
                 await #expect(throws: BiometricServiceError.self) {
                     try await service.save(email: "user@example.com", password: "secret")
@@ -62,11 +85,7 @@
             @Test func missingCredentialsThrowsUnconfiguredAfterAuthenticationEvaluation() async {
                 let authentication = MockLocalAuthenticationService(result: .success)
                 let keychain = MockBiometricCredentialStore(authentication: authentication)
-                let service = BiometricService(
-                    service: "BiometricServiceTests.missing.\(UUID().uuidString)",
-                    localAuthenticationService: authentication,
-                    keychainOverride: keychain
-                )
+                let service = makeService(authentication: authentication, keychain: keychain)
 
                 do {
                     _ = try await service.retrieve()
@@ -80,9 +99,8 @@
             }
 
             @Test func existenceQueryCannotRequestSecretsOrPresentAuthentication() throws {
-                let name = "BiometricServiceTests.exists.\(UUID().uuidString)"
                 let authentication = MockLocalAuthenticationService(result: .success)
-                let service = BiometricService(service: name, localAuthenticationService: authentication)
+                let service = makeService(authentication: authentication)
                 #expect(authentication.evaluationCount == 0)
                 let query = service.credentialExistenceQuery
                 #expect(query[kSecReturnData as String] == nil)
@@ -95,11 +113,7 @@
             @Test func cancellationIsPreservedEvenWithoutCredentials() async {
                 let authentication = MockLocalAuthenticationService(result: .underlying(LAError(.userCancel)))
                 let keychain = MockBiometricCredentialStore(authentication: authentication)
-                let service = BiometricService(
-                    service: "BiometricServiceTests.cancel.\(UUID().uuidString)",
-                    localAuthenticationService: authentication,
-                    keychainOverride: keychain
-                )
+                let service = makeService(authentication: authentication, keychain: keychain)
                 do {
                     _ = try await service.retrieve()
                     Issue.record("Expected cancellation")
@@ -112,20 +126,13 @@
             }
 
             @Test func lockoutKeepsStoredCredentials() async throws {
-                let setup = MockLocalAuthenticationService(result: .success)
+                let setup = MockLocalAuthenticationService(result: .success, biometricState: Data([1]))
                 let keychain = MockBiometricCredentialStore(authentication: setup)
-                try await BiometricService(
-                    service: "BiometricServiceTests.lockout.\(UUID().uuidString)",
-                    localAuthenticationService: setup,
-                    keychainOverride: keychain
-                ).save(email: "user", password: "secret")
+                try await makeService(authentication: setup, keychain: keychain)
+                    .save(email: "user", password: "secret")
 
                 let lockedOut = MockLocalAuthenticationService(result: .underlying(LAError(.biometryLockout)))
-                let service = BiometricService(
-                    service: "BiometricServiceTests.lockout.\(UUID().uuidString)",
-                    localAuthenticationService: lockedOut,
-                    keychainOverride: keychain
-                )
+                let service = makeService(authentication: lockedOut, keychain: keychain)
 
                 let retrieveError = await #expect(throws: BiometricServiceError.self) {
                     _ = try await service.retrieve()
@@ -137,85 +144,159 @@
                 #expect(saveError?.isLockedOut == true)
                 #expect(!keychain.operations.contains(.remove))
                 #expect(try keychain.getData() != nil)
+                #expect(baselineExists())
             }
 
             @Test func synchronizationIsRejectedBeforeAuthentication() async {
                 let authentication = MockLocalAuthenticationService(result: .success)
-                let service = BiometricService(
-                    service: "BiometricServiceTests.sync.\(UUID().uuidString)",
-                    synchronizable: true,
-                    localAuthenticationService: authentication
-                )
+                let service = makeService(synchronizable: true, authentication: authentication)
                 do {
                     try await service.save(email: "user", password: "secret")
                     Issue.record("Expected unsupported synchronization")
                 } catch BiometricServiceError.synchronizationUnsupported {
                     #expect(authentication.evaluationCount == 0)
-                    #expect(authentication.recordCount == 0)
+                    #expect(!baselineExists())
                 } catch {
                     Issue.record("Unexpected error: \(error)")
                 }
             }
 
-            @Test(arguments: [false, true]) func successfulSaveAndRetrievePreserveBiometricChange(changed: Bool) async throws {
-                let name = "BiometricServiceTests.success.\(UUID().uuidString)"
-                let authentication = MockLocalAuthenticationService(result: changed ? .biometricChanged(true) : .success)
+            @Test func saveRecordsBiometricStateForTheItem() async throws {
+                let authentication = MockLocalAuthenticationService(result: .success, biometricState: Data([1]))
                 let keychain = MockBiometricCredentialStore(authentication: authentication)
-                let service = BiometricService(
-                    service: name,
-                    localAuthenticationService: authentication,
-                    keychainOverride: keychain
-                )
+
+                try await makeService(authentication: authentication, keychain: keychain)
+                    .save(email: "user", password: "secret")
+
+                #expect(try Data(contentsOf: baseline().fileURL) == Data([1]))
+                #expect(keychain.operations == [.write(afterEvaluations: 1)])
+            }
+
+            @Test(arguments: [false, true]) func retrieveReportsBiometricChangeSinceSave(changed: Bool) async throws {
+                let authentication = MockLocalAuthenticationService(result: .success, biometricState: Data([1]))
+                let keychain = MockBiometricCredentialStore(authentication: authentication)
+                let service = makeService(authentication: authentication, keychain: keychain)
                 try await service.save(email: "user", password: "secret")
-                #expect(authentication.recordCount == 1)
-                let result = try await service.retrieve()
-                switch result {
-                    case let .success(username, password):
-                        #expect(!changed)
-                        #expect(username == "user")
-                        #expect(password == "secret")
-                    case let .biometricChanged(username, password):
-                        #expect(changed)
-                        #expect(username == "user")
-                        #expect(password == "secret")
+
+                if changed {
+                    authentication.biometricState = Data([2])
                 }
+                let result = try await service.retrieve()
+
+                let expected: BiometricServiceResult = changed
+                    ? .biometricChanged(username: "user", password: "secret")
+                    : .success(username: "user", password: "secret")
+                #expect(result == expected)
                 #expect(keychain.operations == [.write(afterEvaluations: 1), .read(afterEvaluations: 2)])
-                #expect(authentication.evaluationCount == 2)
-                #expect(authentication.recordCount == 1)
+                // Comparing never advances the recorded baseline.
+                #expect(try Data(contentsOf: baseline().fileURL) == Data([1]))
+            }
+
+            @Test func baselinesAreIndependentPerAccount() async throws {
+                let first = MockLocalAuthenticationService(result: .success, biometricState: Data([1]))
+                let firstService = makeService(
+                    account: "first",
+                    authentication: first,
+                    keychain: MockBiometricCredentialStore(authentication: first)
+                )
+                try await firstService.save(email: "first", password: "secret")
+
+                let second = MockLocalAuthenticationService(result: .success, biometricState: Data([2]))
+                try await makeService(
+                    account: "second",
+                    authentication: second,
+                    keychain: MockBiometricCredentialStore(authentication: second)
+                ).save(email: "second", password: "secret")
+
+                #expect(baseline(account: "first").fileURL != baseline(account: "second").fileURL)
+                #expect(try await firstService.retrieve() == .success(username: "first", password: "secret"))
+            }
+
+            @Test func baselineIsExcludedFromBackup() async throws {
+                let authentication = MockLocalAuthenticationService(result: .success, biometricState: Data([1]))
+                try await makeService(
+                    authentication: authentication,
+                    keychain: MockBiometricCredentialStore(authentication: authentication)
+                ).save(email: "user", password: "secret")
+
+                let values = try baseline().fileURL.resourceValues(forKeys: [.isExcludedFromBackupKey])
+                #expect(values.isExcludedFromBackup == true)
+            }
+
+            @Test func forgetRemovesCredentialsAndBaseline() async throws {
+                let authentication = MockLocalAuthenticationService(result: .success, biometricState: Data([1]))
+                let keychain = MockBiometricCredentialStore(authentication: authentication)
+                let service = makeService(authentication: authentication, keychain: keychain)
+                try await service.save(email: "user", password: "secret")
+                #expect(baselineExists())
+
+                service.forget()
+
+                #expect(!baselineExists())
+                #expect(keychain.operations.last == .remove)
+                #expect(try keychain.getData() == nil)
             }
 
             @Test func failedKeychainSaveDoesNotRecordBiometricState() async {
-                let authentication = MockLocalAuthenticationService(result: .biometricChanged(true))
+                let authentication = MockLocalAuthenticationService(result: .success, biometricState: Data([1]))
                 let keychain = MockBiometricCredentialStore(authentication: authentication, failsWrites: true)
-                let service = BiometricService(
-                    service: "BiometricServiceTests.failedSave.\(UUID().uuidString)",
-                    localAuthenticationService: authentication,
-                    keychainOverride: keychain
-                )
+                let service = makeService(authentication: authentication, keychain: keychain)
                 await #expect(throws: BiometricServiceError.self) {
                     try await service.save(email: "user", password: "secret")
                 }
                 #expect(authentication.evaluationCount == 1)
-                #expect(authentication.recordCount == 0)
+                #expect(!baselineExists())
                 #expect(keychain.operations == [.write(afterEvaluations: 1)])
             }
 
             @Test func rejectedAuthenticationDoesNotWriteCredentialsOrBaseline() async throws {
-                let name = "BiometricServiceTests.denied.\(UUID().uuidString)"
-                let authentication = MockLocalAuthenticationService(result: .biometricChanged(false))
+                let authentication = MockLocalAuthenticationService(result: .failed, biometricState: Data([1]))
                 let keychain = MockBiometricCredentialStore(authentication: authentication)
-                let service = BiometricService(
-                    service: name,
-                    localAuthenticationService: authentication,
-                    keychainOverride: keychain
-                )
+                let service = makeService(authentication: authentication, keychain: keychain)
                 await #expect(throws: BiometricServiceError.self) {
                     try await service.save(email: "user", password: "secret")
                 }
-                #expect(authentication.recordCount == 0)
+                #expect(!baselineExists())
                 #expect(keychain.operations.isEmpty)
             }
 
+        }
+
+        struct BiometricBaselineTests {
+
+            @Test func comparingBiometricStateNeverAdvancesTheBaseline() throws {
+                let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+                defer { try? FileManager.default.removeItem(at: directory) }
+                let baseline = BiometricBaseline(fileURL: directory.appendingPathComponent("state"))
+                let original = Data([1, 2, 3])
+                let replacement = Data([4, 5, 6])
+
+                #expect(try !baseline.hasChanged(from: original))
+                #expect(!FileManager.default.fileExists(atPath: baseline.fileURL.path))
+                try baseline.record(original)
+                #expect(try baseline.hasChanged(from: replacement))
+                #expect(try baseline.hasChanged(from: replacement))
+                #expect(try Data(contentsOf: baseline.fileURL) == original)
+
+                try baseline.record(replacement)
+                #expect(try !baseline.hasChanged(from: replacement))
+                #expect(try baseline.hasChanged(from: original))
+
+                try baseline.remove()
+                try baseline.remove()
+                #expect(try !baseline.hasChanged(from: original))
+            }
+
+            @Test func itemLocationDependsOnServiceAccountAndAccessGroup() {
+                let directory = URL(fileURLWithPath: "/tmp/baselines")
+                let base = BiometricBaseline.forItem(service: "service", account: "account", accessGroup: nil, in: directory)
+
+                #expect(base.fileURL.path.hasPrefix("/tmp/baselines/Lockbox/Biometrics/"))
+                #expect(base.fileURL == BiometricBaseline.forItem(service: "service", account: "account", accessGroup: nil, in: directory).fileURL)
+                #expect(base.fileURL != BiometricBaseline.forItem(service: "other", account: "account", accessGroup: nil, in: directory).fileURL)
+                #expect(base.fileURL != BiometricBaseline.forItem(service: "service", account: "other", accessGroup: nil, in: directory).fileURL)
+                #expect(base.fileURL != BiometricBaseline.forItem(service: "service", account: "account", accessGroup: "group", in: directory).fileURL)
+            }
         }
 
         private final class MockBiometricCredentialStore: BiometricCredentialStore, @unchecked Sendable {
@@ -276,24 +357,27 @@
             let result: LAContext.PolicyEvaluationResult
             private let lock = NSLock()
             private var evaluations = 0
-            private var records = 0
+            private var state: Data?
 
             var evaluationCount: Int {
                 lock.withLock { evaluations }
             }
 
-            var recordCount: Int {
-                lock.withLock { records }
+            var biometricState: Data? {
+                get { lock.withLock { state } }
+                set { lock.withLock { state = newValue } }
             }
 
             init(
                 supportedType: LABiometryType = .faceID,
                 isConfigured: Bool = true,
-                result: LAContext.PolicyEvaluationResult = .failed
+                result: LAContext.PolicyEvaluationResult = .failed,
+                biometricState: Data? = nil
             ) {
                 self.supportedType = supportedType
                 self.isConfigured = isConfigured
                 self.result = result
+                state = biometricState
             }
 
             func isProperlyConfigured(for _: LAPolicy) -> Bool {
@@ -315,10 +399,6 @@
                 reason _: String?
             ) async -> LAContext.PolicyEvaluationResult {
                 .failed
-            }
-
-            func recordBiometricState() throws {
-                lock.withLock { records += 1 }
             }
 
             func invalidate() {

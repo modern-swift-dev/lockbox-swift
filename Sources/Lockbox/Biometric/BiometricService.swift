@@ -2,6 +2,7 @@
     #if os(iOS)
         import Foundation
         import LocalAuthentication
+        import os.log
 
         /// Stores and retrieves credentials in the keychain using biometric access control.
         ///
@@ -48,6 +49,9 @@
 
             /// The Keychain Item that wraps the credentials
             private let keychain: any BiometricCredentialStore
+
+            /// The biometric state recorded when these credentials were saved
+            private let baseline: BiometricBaseline
 
             /// The biometric authentication technology supported by the device.
             public var supportedType: LABiometryType {
@@ -124,13 +128,15 @@
                 group accessGroup: String? = nil,
                 synchronizable: Bool = false,
                 localAuthenticationService: any LocalAuthenticationServiceProtocol,
-                keychainOverride: (any BiometricCredentialStore)?
+                keychainOverride: (any BiometricCredentialStore)?,
+                baselineDirectory: URL = .applicationSupportDirectory
             ) {
                 self.service = service
                 self.account = account
                 self.accessGroup = accessGroup
                 self.synchronizable = synchronizable
                 self.localAuthenticationService = localAuthenticationService
+                baseline = .forItem(service: service, account: account, accessGroup: accessGroup, in: baselineDirectory)
 
                 accessControl = SecAccessControlCreateWithFlags(
                     kCFAllocatorDefault,
@@ -179,15 +185,15 @@
                 )
                 do {
                     switch result {
-                        case .success,
-                             .biometricChanged(true):
+                        case .success:
                             let credentials = Credentials(username: email, password: password)
                             let data = try JSONEncoder().encode(credentials)
                             try keychain.set(data: data)
-                            try localAuthenticationService.recordBiometricState()
+                            if let state = localAuthenticationService.biometricState {
+                                try baseline.record(state)
+                            }
 
-                        case .failed,
-                             .biometricChanged(false):
+                        case .failed:
                             throw BiometricServiceError.failed
 
                         case let .underlying(error):
@@ -222,19 +228,17 @@
                 )
                 do {
                     switch result {
-                        case .success,
-                             .biometricChanged(true):
+                        case .success:
                             guard let data = try keychain.getData() else {
                                 throw BiometricServiceError.unconfigured
                             }
 
                             let credentials: Credentials = try JSONDecoder().decode(Credentials.self, from: data)
-                            if case .biometricChanged(true) = result {
+                            if biometricStateChanged() {
                                 return .biometricChanged(username: credentials.username, password: credentials.password)
                             }
                             return .success(username: credentials.username, password: credentials.password)
-                        case .failed,
-                             .biometricChanged(false):
+                        case .failed:
                             throw BiometricServiceError.failed
                         case let .underlying(error):
                             throw BiometricServiceError.from(error: error)
@@ -247,12 +251,28 @@
                 }
             }
 
-            /// Removes the stored credentials from the keychain.
+            /// Removes the stored credentials and their recorded biometric state.
             ///
             /// Removal errors are ignored. Call ``hasCredentials`` to inspect whether data
             /// remains accessible afterward.
             public func forget() {
                 try? keychain.remove()
+                try? baseline.remove()
+            }
+
+            /// Compares the current biometric state with the state recorded at save time.
+            ///
+            /// An unreadable baseline counts as a change, so callers re-verify the user.
+            private func biometricStateChanged() -> Bool {
+                guard let state = localAuthenticationService.biometricState else {
+                    return false
+                }
+                do {
+                    return try baseline.hasChanged(from: state)
+                } catch {
+                    os_log("%{public}@", type: .error, error.localizedDescription)
+                    return true
+                }
             }
         }
 

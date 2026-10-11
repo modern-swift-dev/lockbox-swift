@@ -1,5 +1,4 @@
 #if canImport(Security)
-    import os.log
     import Security
 
     #if canImport(LocalAuthentication) && !os(tvOS)
@@ -14,36 +13,6 @@
         import Foundation
 
         public extension LAContext {
-
-            /// Compares the current biometric state without changing the saved baseline.
-            internal func hasBiometricDataChanged(_: LAAccessControlOperation) -> Bool {
-                guard let newData = domainState.stateHash, let baseline = biometricBaseline else {
-                    return false
-                }
-                do {
-                    return try baseline.hasChanged(from: newData)
-                } catch {
-                    os_log("%{public}@", type: .error, error.localizedDescription)
-                    return true
-                }
-            }
-
-            /// Records a baseline only after the caller has successfully stored its credentials.
-            internal func recordBiometricState() throws {
-                guard let data = domainState.stateHash, let baseline = biometricBaseline else {
-                    return
-                }
-                try baseline.record(data)
-            }
-
-            private var biometricBaseline: BiometricBaseline? {
-                guard let bundleId = Bundle.main.bundleIdentifier else {
-                    return nil
-                }
-                return BiometricBaseline(
-                    fileURL: URL.applicationSupportDirectory.appendingPathComponent("\(bundleId).biometrics")
-                )
-            }
 
             /// Evaluates access using the strategy selected by a security mode.
             ///
@@ -88,7 +57,7 @@
                             return continuation.resume(returning: .failed)
                         }
 
-                        continuation.resume(returning: PolicyEvaluationResult.from(context: self, operation: operation, result: result, error: error))
+                        continuation.resume(returning: PolicyEvaluationResult.from(result: result, error: error))
                     })
                 }
             }
@@ -113,7 +82,7 @@
                         guard let self else {
                             return continuation.resume(returning: .failed)
                         }
-                        continuation.resume(returning: PolicyEvaluationResult.from(context: self, operation: operation, result: result, error: error))
+                        continuation.resume(returning: PolicyEvaluationResult.from(result: result, error: error))
                     }
                 }
             }

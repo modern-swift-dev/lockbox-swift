@@ -46,8 +46,9 @@
                 reason: String?
             ) async -> LAContext.PolicyEvaluationResult
 
-            /// Records the current biometric baseline after credentials have been successfully saved.
-            func recordBiometricState() throws
+            /// An opaque value that changes when the enrolled biometrics change, or `nil`
+            /// when it isn't available.
+            var biometricState: Data? { get }
 
             /// Discards the context's cached authentication state.
             ///
@@ -57,9 +58,9 @@
         }
 
         public extension LocalAuthenticationServiceProtocol {
-            /// Persists the context's current biometric state after successful credential storage.
-            func recordBiometricState() throws {
-                try context.recordBiometricState()
+            /// The context's current biometric state hash.
+            var biometricState: Data? {
+                context.domainState.stateHash
             }
         }
 

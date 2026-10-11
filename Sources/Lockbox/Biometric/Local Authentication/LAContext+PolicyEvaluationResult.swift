@@ -8,16 +8,11 @@
             /// The outcome of evaluating a Local Authentication policy or access control.
             enum PolicyEvaluationResult: Sendable {
 
-                /// Evaluation succeeded and the enrolled biometric state is unchanged.
+                /// Evaluation succeeded.
                 case success
 
                 /// Evaluation completed without an error but did not authorize the operation.
                 case failed
-
-                /// The enrolled biometric state differs from the state recorded during item creation.
-                ///
-                /// - Parameter result: The authorization result returned by Local Authentication.
-                case biometricChanged(Bool)
 
                 /// Local Authentication reported an error.
                 ///
@@ -27,19 +22,13 @@
                 /// Converts a Local Authentication callback into a policy evaluation result.
                 ///
                 /// - Parameters:
-                ///   - context: The context that performed the evaluation.
-                ///   - operation: The access-control operation being evaluated.
                 ///   - result: The authorization result returned by Local Authentication.
                 ///   - error: The evaluation error, if one occurred.
-                /// - Returns: A result preserving errors and biometric-state changes before
-                ///   mapping the authorization Boolean to ``success`` or ``failed``.
-                static func from(context: LAContext, operation: LAAccessControlOperation, result: Bool, error: (any Error)?) -> PolicyEvaluationResult {
+                /// - Returns: A result preserving errors before mapping the authorization
+                ///   Boolean to ``success`` or ``failed``.
+                static func from(result: Bool, error: (any Error)?) -> PolicyEvaluationResult {
                     if let error {
                         return .underlying(error)
-                    }
-
-                    if context.hasBiometricDataChanged(operation) {
-                        return .biometricChanged(result)
                     }
 
                     if result {
