@@ -77,3 +77,16 @@ jobs:
         run: xcodebuild build -scheme Lockbox -destination '${{ steps.destination.outputs.value }}' 2>&1 | mint run --no-install cpisciotta/xcbeautify -q
       - name: Test on ${{ matrix.platform }}
         run: xcodebuild test -scheme Lockbox -destination '${{ steps.destination.outputs.value }}' 2>&1 | mint run --no-install cpisciotta/xcbeautify -q
+
+  example:
+    runs-on: macos-26
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install xcbeautify
+        run: |
+          brew install mint
+          mint install cpisciotta/xcbeautify
+      - name: Build example app
+        run: make test-examples

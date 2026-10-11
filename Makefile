@@ -8,6 +8,7 @@ IOS_DESTINATION ?= platform=iOS Simulator,name=iPhone 17 Pro,OS=latest
 TVOS_DESTINATION ?= platform=tvOS Simulator,name=Apple TV 4K (3rd generation),OS=latest
 WATCHOS_DESTINATION ?= platform=watchOS Simulator,name=Apple Watch Series 11 (46mm),OS=latest
 VISIONOS_DESTINATION ?= platform=visionOS Simulator,name=Apple Vision Pro,OS=latest
+EXAMPLE_DESTINATION ?= generic/platform=iOS Simulator
 
 
 .PHONY: setup lint format documentation \
@@ -69,7 +70,7 @@ test-examples:
 	xcodebuild build \
 		-project Examples/LockboxExample/LockboxExample.xcodeproj \
 		-scheme LockboxExample \
-		-destination "$(IOS_DESTINATION)" \
+		-destination "$(EXAMPLE_DESTINATION)" \
 		CODE_SIGNING_ALLOWED=NO | mint run --no-install cpisciotta/xcbeautify -q
 
 test: test-macos test-ios test-tvos test-watchos test-visionos test-examples
