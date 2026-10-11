@@ -105,6 +105,14 @@
             #expect(createQuery[kSecAttrAccessible as String] as? String == kSecAttrAccessibleAfterFirstUnlock as String)
         }
 
+        @Test func internetPasswordUsesExplicitService() throws {
+            let url = try #require(URL(string: "https://example.com"))
+            let password = KeychainPassword.internet(url: url, service: "com.example.explicit", account: "user")
+
+            let query = try #require(password.criteria.query as? [String: AnyObject])
+            #expect(query[kSecAttrService as String] as? String == "com.example.explicit")
+        }
+
         @Test func handleWithoutAttributesCreatesWithCriteriaOnly() {
             let password = KeychainPassword.generic(service: "com.example.attributes", account: "user")
 

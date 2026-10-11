@@ -19,8 +19,8 @@
             /// - Parameters:
             ///   - url: The URL whose scheme, host, port, and path identify the internet password.
             ///   - authenticationType: The authentication type associated with the password.
-            ///   - service: An application-defined service namespace. By default, this is the
-            ///     main bundle identifier.
+            ///   - service: An application-defined service namespace, such as the app's
+            ///     bundle identifier.
             ///   - account: The account identifier, such as a user name or email address.
             ///   - accessGroup: An optional shared keychain access group. The calling app must
             ///     have the corresponding entitlement.
@@ -39,8 +39,7 @@
             static func internet(
                 url: URL,
                 authenticationType: KeychainCriterion.AuthenticationType = .default,
-                // swiftlint:disable:next force_unwrapping
-                service: String = Bundle.main.bundleIdentifier!,
+                service: String,
                 account: String,
                 accessGroup: String? = nil,
                 synchronizable: Bool? = nil,
@@ -81,8 +80,8 @@
             /// - Parameters:
             ///   - url: The URL whose scheme, host, port, and path identify the internet password.
             ///   - authenticationType: The authentication type associated with the password.
-            ///   - service: An application-defined service namespace. By default, this is the
-            ///     main bundle identifier.
+            ///   - service: An application-defined service namespace, such as the app's
+            ///     bundle identifier.
             ///   - account: The account identifier, such as a user name or email address.
             ///   - accessGroup: An optional shared keychain access group. The calling app must
             ///     have the corresponding entitlement.
@@ -99,8 +98,7 @@
             static func internet(
                 url: URL,
                 authenticationType: KeychainCriterion.AuthenticationType = .default,
-                // swiftlint:disable:next force_unwrapping
-                service: String = Bundle.main.bundleIdentifier!,
+                service: String,
                 account: String,
                 accessGroup: String? = nil,
                 synchronizable: Bool? = nil,
@@ -135,15 +133,13 @@
         /// protocols that cannot be represented by the URL convenience API.
         ///
         /// - Parameters:
-        ///   - service: The service namespace whose internet-password items to find. By
-        ///     default, this is the main bundle identifier.
+        ///   - service: The service namespace whose internet-password items to find.
         ///   - accessGroup: An optional shared keychain access group used to limit the search.
         /// - Returns: Handles for the matching internet-password items.
         ///   Returns an empty array when no items match.
         /// - Throws: ``KeychainError`` when the Security framework cannot search the keychain.
         static func allInternetPassword(
-            // swiftlint:disable:next force_unwrapping
-            service: String = Bundle.main.bundleIdentifier!,
+            service: String,
             accessGroup: String? = nil
         ) throws -> [KeychainPassword] {
             let accounts = try KeychainCriterion.findAll(

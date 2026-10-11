@@ -94,7 +94,7 @@
             /// Creates a biometric credential service for a generic-password keychain item.
             ///
             /// - Parameters:
-            ///   - service: The keychain service name. By default, the main bundle identifier.
+            ///   - service: The keychain service name, such as the app's bundle identifier.
             ///   - account: The account name used to identify the keychain item.
             ///   - accessGroup: The keychain access group, or `nil` to use the app's default access.
             ///   - synchronizable: Must be `false`. Device-only biometric credentials cannot sync;
@@ -102,8 +102,7 @@
             ///   - localAuthenticationService: The local-authentication service used for prompts
             ///     and as the keychain authentication context.
             public convenience init(
-                // swiftlint:disable:next force_unwrapping
-                service: String = Bundle.main.bundleIdentifier!,
+                service: String,
                 account: String = "credentials",
                 group accessGroup: String? = nil,
                 synchronizable: Bool = false,
