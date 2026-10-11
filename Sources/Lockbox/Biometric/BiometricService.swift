@@ -157,7 +157,9 @@
             ///   - email: The username or email address to store.
             ///   - password: The password to store.
             /// - Throws: ``BiometricServiceError`` when biometrics are unsupported, not
-            ///   configured, rejected, or unavailable, or synchronization is requested.
+            ///   configured, rejected, locked out, or unavailable, or synchronization is requested.
+            ///   A lockout leaves stored credentials in place; the system clears it after the
+            ///   user enters the device passcode.
             ///   Encoding, keychain, and biometric-baseline storage errors are wrapped in ``BiometricServiceError/underlying(_:)``.
             public func save(email: String, password: String) async throws {
                 guard !synchronizable else {
@@ -189,11 +191,7 @@
                             throw BiometricServiceError.failed
 
                         case let .underlying(error):
-                            let biometricError = BiometricServiceError.from(error: error)
-                            if biometricError.isLockedOut {
-                                forget()
-                            }
-                            throw biometricError
+                            throw BiometricServiceError.from(error: error)
                     }
                 } catch {
                     if error is BiometricServiceError {
@@ -207,8 +205,9 @@
             ///
             /// - Returns: The decoded username and password in a ``BiometricServiceResult``.
             /// - Throws: ``BiometricServiceError`` when biometrics are unsupported or not
-            ///   configured, credentials are absent, authentication fails, or stored data
-            ///   cannot be read or decoded.
+            ///   configured, credentials are absent, authentication fails or is locked out,
+            ///   or stored data cannot be read or decoded. A lockout leaves stored credentials
+            ///   in place; call ``forget()`` if your app should discard them.
             public func retrieve() async throws -> BiometricServiceResult {
                 guard supportedByDevice else {
                     throw BiometricServiceError.unsupported
@@ -238,11 +237,7 @@
                              .biometricChanged(false):
                             throw BiometricServiceError.failed
                         case let .underlying(error):
-                            let biometricError = BiometricServiceError.from(error: error)
-                            if biometricError.isLockedOut {
-                                forget()
-                            }
-                            throw biometricError
+                            throw BiometricServiceError.from(error: error)
                     }
                 } catch {
                     if error is BiometricServiceError {

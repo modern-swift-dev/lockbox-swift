@@ -111,6 +111,34 @@
                 }
             }
 
+            @Test func lockoutKeepsStoredCredentials() async throws {
+                let setup = MockLocalAuthenticationService(result: .success)
+                let keychain = MockBiometricCredentialStore(authentication: setup)
+                try await BiometricService(
+                    service: "BiometricServiceTests.lockout.\(UUID().uuidString)",
+                    localAuthenticationService: setup,
+                    keychainOverride: keychain
+                ).save(email: "user", password: "secret")
+
+                let lockedOut = MockLocalAuthenticationService(result: .underlying(LAError(.biometryLockout)))
+                let service = BiometricService(
+                    service: "BiometricServiceTests.lockout.\(UUID().uuidString)",
+                    localAuthenticationService: lockedOut,
+                    keychainOverride: keychain
+                )
+
+                let retrieveError = await #expect(throws: BiometricServiceError.self) {
+                    _ = try await service.retrieve()
+                }
+                let saveError = await #expect(throws: BiometricServiceError.self) {
+                    try await service.save(email: "user", password: "new")
+                }
+                #expect(retrieveError?.isLockedOut == true)
+                #expect(saveError?.isLockedOut == true)
+                #expect(!keychain.operations.contains(.remove))
+                #expect(try keychain.getData() != nil)
+            }
+
             @Test func synchronizationIsRejectedBeforeAuthentication() async {
                 let authentication = MockLocalAuthenticationService(result: .success)
                 let service = BiometricService(
