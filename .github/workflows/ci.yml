@@ -88,5 +88,12 @@ jobs:
         run: |
           brew install mint
           mint install cpisciotta/xcbeautify
-      - name: Build example app
-        run: make test-examples
+      - name: Create iOS simulator
+        id: simulator
+        run: |
+          simulator_id="$(xcrun simctl create 'Lockbox Example CI' com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro com.apple.CoreSimulator.SimRuntime.iOS-26-5)"
+          echo "id=$simulator_id" >> "$GITHUB_OUTPUT"
+      - name: Test example app keychain integration
+        env:
+          SIMULATOR_ID: ${{ steps.simulator.outputs.id }}
+        run: make test-examples EXAMPLE_DESTINATION="id=$SIMULATOR_ID"

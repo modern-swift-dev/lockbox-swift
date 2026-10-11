@@ -15,3 +15,11 @@ Open `LockboxExample.xcodeproj`, select the `LockboxExample` scheme, choose an i
 Use a physical device with Face ID or Touch ID enrolled for the most representative biometric behavior. In Simulator, enable Face ID enrollment under **Features > Face ID > Enrolled**, then use **Features > Face ID > Matching Face** when the system prompt appears. The app includes its required `NSFaceIDUsageDescription`.
 
 Keychain items are scoped to the example app's bundle identifier. Delete an item with the corresponding button before changing accounts or URLs if you want to reset the sample state.
+
+## Keychain integration tests
+
+`LockboxExampleTests` runs inside the example app, so it can use the simulator's real keychain. SwiftPM test bundles can't, because they lack the keychain entitlement. Run the tests from Xcode with **Product > Test**, or from the repository root:
+
+```sh
+make test-examples
+```

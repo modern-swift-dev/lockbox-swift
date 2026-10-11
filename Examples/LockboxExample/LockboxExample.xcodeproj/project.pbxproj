@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		B10000000000000000000001 /* Lockbox in Frameworks */ = {isa = PBXBuildFile; productRef = B10000000000000000000002 /* Lockbox */; };
 		A10000000000000000000001 /* Lockbox in Frameworks */ = {isa = PBXBuildFile; productRef = A10000000000000000000002 /* Lockbox */; };
 		A10000000000000000000003 /* LockboxExampleApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000004 /* LockboxExampleApp.swift */; };
 /* End PBXBuildFile section */
@@ -15,7 +16,26 @@
 		A10000000000000000000004 /* LockboxExampleApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockboxExampleApp.swift; sourceTree = "<group>"; };
 		A10000000000000000000005 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A10000000000000000000006 /* LockboxExample.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LockboxExample.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B10000000000000000000003 /* LockboxExampleTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = LockboxExampleTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
+
+/* Begin PBXContainerItemProxy section */
+		B10000000000000000000004 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A10000000000000000000010 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A1000000000000000000000C;
+			remoteInfo = LockboxExample;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		B10000000000000000000005 /* LockboxExampleTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = LockboxExampleTests;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		A10000000000000000000007 /* Frameworks */ = {
@@ -26,6 +46,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		B10000000000000000000006 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B10000000000000000000001 /* Lockbox in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -33,6 +61,7 @@
 			isa = PBXGroup;
 			children = (
 				A10000000000000000000009 /* LockboxExample */,
+				B10000000000000000000005 /* LockboxExampleTests */,
 				A1000000000000000000000A /* Products */,
 			);
 			sourceTree = "<group>";
@@ -49,6 +78,7 @@
 			isa = PBXGroup;
 			children = (
 				A10000000000000000000006 /* LockboxExample.app */,
+				B10000000000000000000003 /* LockboxExampleTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -85,6 +115,30 @@
 			productReference = A10000000000000000000006 /* LockboxExample.app */;
 			productType = "com.apple.product-type.application";
 		};
+		B10000000000000000000007 /* LockboxExampleTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B10000000000000000000008 /* Build configuration list for PBXNativeTarget "LockboxExampleTests" */;
+			buildPhases = (
+				B10000000000000000000009 /* Sources */,
+				B10000000000000000000006 /* Frameworks */,
+				B1000000000000000000000A /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				B1000000000000000000000B /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				B10000000000000000000005 /* LockboxExampleTests */,
+			);
+			name = LockboxExampleTests;
+			packageProductDependencies = (
+				B10000000000000000000002 /* Lockbox */,
+			);
+			productName = LockboxExampleTests;
+			productReference = B10000000000000000000003 /* LockboxExampleTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -97,6 +151,10 @@
 				TargetAttributes = {
 					A1000000000000000000000C = {
 						CreatedOnToolsVersion = 16.0;
+					};
+					B10000000000000000000007 = {
+						CreatedOnToolsVersion = 16.0;
+						TestTargetID = A1000000000000000000000C;
 					};
 				};
 			};
@@ -119,11 +177,19 @@
 			projectRoot = "";
 			targets = (
 				A1000000000000000000000C /* LockboxExample */,
+				B10000000000000000000007 /* LockboxExampleTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		B1000000000000000000000A /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		A1000000000000000000000F /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -134,6 +200,13 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		B10000000000000000000009 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		A1000000000000000000000E /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -143,6 +216,14 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		B1000000000000000000000B /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A1000000000000000000000C /* LockboxExample */;
+			targetProxy = B10000000000000000000004 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		A10000000000000000000013 /* Debug */ = {
@@ -230,6 +311,42 @@
 			};
 			name = Release;
 		};
+		B1000000000000000000000C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.LockboxExampleTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/LockboxExample.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/LockboxExample";
+			};
+			name = Debug;
+		};
+		B1000000000000000000000D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.LockboxExampleTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/LockboxExample.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/LockboxExample";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -251,6 +368,15 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		B10000000000000000000008 /* Build configuration list for PBXNativeTarget "LockboxExampleTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B1000000000000000000000C /* Debug */,
+				B1000000000000000000000D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
@@ -264,6 +390,11 @@
 		A10000000000000000000002 /* Lockbox */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = A10000000000000000000012 /* XCLocalSwiftPackageReference \"../..\" */;
+			productName = Lockbox;
+		};
+		B10000000000000000000002 /* Lockbox */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A10000000000000000000012 /* XCLocalSwiftPackageReference "../.." */;
 			productName = Lockbox;
 		};
 /* End XCSwiftPackageProductDependency section */
