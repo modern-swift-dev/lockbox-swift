@@ -5,14 +5,16 @@
 
     @Suite(.serialized) struct QueryBuildingURLTests {
 
-        @Test func queryContainsURLWithSFTP() throws {
+        @Test func queryContainsURLWithSFTPHasNoProtocol() throws {
             let url = try #require(URL(string: "sftp://files.example.com/path"))
             let criteria: [KeychainCriterion] = [
                 .url(url)
             ]
             let query = try #require(criteria.query as? [String: AnyObject])
 
-            #expect(query[kSecAttrProtocol as String] as? String == kSecAttrProtocolFTPS as String)
+            // SFTP runs over SSH, so it must not be recorded as FTPS.
+            #expect(query[kSecAttrProtocol as String] == nil)
+            #expect(query[kSecAttrServer as String] as? String == "files.example.com")
         }
 
         @Test func queryContainsURLWithFTPS() throws {
@@ -56,8 +58,51 @@
             ]
             let query = try #require(criteria.query as? [String: AnyObject])
 
-            // Empty path should not be included
-            #expect(query[kSecAttrPath as String] == nil)
+            // Empty path is stored as the root path, like KeychainPassword.internet
+            #expect(query[kSecAttrPath as String] as? String == "/")
+            #expect((query[kSecAttrPort as String] as? NSNumber)?.intValue == 443)
+        }
+
+        @Test(arguments: [
+            "https://example.com",
+            "http://example.com:8080/login",
+            "example.com",
+            "ftp://files.example.com/pub",
+            "ssh://host.example.com:2222",
+            "smb://server.local/share",
+            "sftp://files.example.com/path",
+            "custom://server.example.com:9000/path"
+        ])
+        func urlCriterionMatchesInternetPasswordAttributes(string: String) throws {
+            let url = try #require(URL(string: string))
+            let urlQuery = try #require([KeychainCriterion.url(url, .httpBasic)].query as? [String: AnyObject])
+            let password = KeychainPassword.internet(
+                url: url,
+                authenticationType: .httpBasic,
+                service: "com.example.url",
+                account: "user"
+            )
+            let passwordQuery = try #require(password.criteria.query as? [String: AnyObject])
+
+            for key in [kSecAttrProtocol, kSecAttrPort, kSecAttrServer, kSecAttrPath, kSecAttrAuthenticationType] {
+                #expect(urlQuery[key as String] as? NSObject == passwordQuery[key as String] as? NSObject, "\(key)")
+            }
+        }
+
+        @Test func urlWithExplicitPortKeepsPortForNonHTTPSchemes() throws {
+            let url = try #require(URL(string: "ssh://host.example.com:2222"))
+            let query = try #require([KeychainCriterion.url(url)].query as? [String: AnyObject])
+
+            #expect(query[kSecAttrProtocol as String] as? String == kSecAttrProtocolSSH as String)
+            #expect((query[kSecAttrPort as String] as? NSNumber)?.intValue == 2222)
+        }
+
+        @Test func urlWithoutPortHasNoDefaultPortForNonHTTPSchemes() throws {
+            let url = try #require(URL(string: "ftp://files.example.com"))
+            let query = try #require([KeychainCriterion.url(url)].query as? [String: AnyObject])
+
+            #expect(query[kSecAttrProtocol as String] as? String == kSecAttrProtocolFTP as String)
+            #expect(query[kSecAttrPort as String] == nil)
         }
 
         @Test func urlSchemeHTTPQueryValue() throws {

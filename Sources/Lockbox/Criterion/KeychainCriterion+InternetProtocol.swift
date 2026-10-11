@@ -51,6 +51,28 @@
                 return .other(value)
             }
 
+            /// Maps a URL scheme to its protocol, or `nil` when the scheme has no named case.
+            init?(urlScheme: String) {
+                switch urlScheme.lowercased() {
+                    case "http": self = .http
+                    case "https": self = .https
+                    case "ftp": self = .ftp
+                    case "ftps": self = .ftps
+                    case "smb": self = .smb
+                    case "ssh": self = .ssh
+                    default: return nil
+                }
+            }
+
+            /// The port implied by a URL without an explicit port.
+            var defaultPort: Int? {
+                switch self {
+                    case .http: 80
+                    case .https: 443
+                    default: nil
+                }
+            }
+
             var urlScheme: String? {
                 switch self {
                     case .http: "http"

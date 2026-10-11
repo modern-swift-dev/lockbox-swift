@@ -10,9 +10,7 @@
             /// Creates a handle for an internet-password keychain item.
             ///
             /// An internet password is identified by its URL attributes, authentication type,
-            /// service, and account. HTTP URLs default to port `80`, HTTPS URLs default to port
-            /// `443`, and a URL without a scheme is treated as HTTPS. Other URL schemes do not
-            /// contribute protocol or port criteria. An empty URL path is stored as `/`.
+            /// service, and account. The URL is mapped like ``KeychainCriterion/url(_:_:)``.
             /// The returned handle does not create a keychain item until data is stored with
             /// ``set(data:)`` or ``set(string:)``.
             ///
@@ -71,9 +69,7 @@
             /// Creates a handle for an internet-password keychain item.
             ///
             /// An internet password is identified by its URL attributes, authentication type,
-            /// service, and account. HTTP URLs default to port `80`, HTTPS URLs default to port
-            /// `443`, and a URL without a scheme is treated as HTTPS. Other URL schemes do not
-            /// contribute protocol or port criteria. An empty URL path is stored as `/`.
+            /// service, and account. The URL is mapped like ``KeychainCriterion/url(_:_:)``.
             /// The returned handle does not create a keychain item until data is stored with
             /// ``set(data:)`` or ``set(string:)``.
             ///
@@ -180,45 +176,7 @@
                 criteria.append(authenticationCriterion)
             }
 
-            if let scheme = url.scheme {
-                switch scheme {
-                    case "http":
-                        criteria.append(.urlScheme(.http))
-                        if let port = url.port {
-                            criteria.append(.urlPort(port))
-                        } else {
-                            criteria.append(.urlPort(80))
-                        }
-                    case "https":
-                        criteria.append(.urlScheme(.https))
-                        if let port = url.port {
-                            criteria.append(.urlPort(port))
-                        } else {
-                            criteria.append(.urlPort(443))
-                        }
-                    default:
-                        break
-                }
-            } else {
-                criteria.append(.urlScheme(.https))
-                if let port = url.port {
-                    criteria.append(.urlPort(port))
-                } else {
-                    criteria.append(.urlPort(443))
-                }
-            }
-
-            if let host = url.host {
-                criteria.append(.urlHost(host))
-            }
-
-            if !url.path.isEmpty {
-                criteria.append(.urlPath(url.path))
-            } else {
-                criteria.append(.urlPath("/"))
-            }
-
-            criteria.append(.urlAuthenticationType(authenticationType))
+            criteria.append(contentsOf: KeychainCriterion.urlCriteria(url, authenticationType: authenticationType))
             return .init(criteria: criteria, attributes: attributes)
         }
     }

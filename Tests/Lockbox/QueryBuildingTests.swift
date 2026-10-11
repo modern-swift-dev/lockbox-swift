@@ -244,14 +244,14 @@
             #expect(query[kSecAttrProtocol as String] as? String == kSecAttrProtocolSSH as String)
         }
 
-        @Test func queryOmitsPathForRootURL() throws {
+        @Test func queryKeepsRootPathForRootURL() throws {
             let url = try #require(URL(string: "https://example.com/"))
             let criteria: [KeychainCriterion] = [
                 .url(url)
             ]
             let query = try #require(criteria.query as? [String: AnyObject])
 
-            #expect(query[kSecAttrPath as String] == nil)
+            #expect(query[kSecAttrPath as String] as? String == "/")
         }
 
         @Test func completeGenericPasswordQuery() throws {

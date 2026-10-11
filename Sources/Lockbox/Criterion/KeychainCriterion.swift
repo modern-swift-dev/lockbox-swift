@@ -76,10 +76,16 @@
 
         /// Sets internet-password attributes from a URL and its authentication type.
         ///
-        /// The URL's host and port are copied when present; non-root paths are copied.
-        /// `http`, `https`, `ftp`, `sftp`, `ftps`, and `ssh` schemes are mapped to
-        /// Security protocol attributes. Unknown schemes do not add a protocol.
-        /// `sftp` is represented as FTPS by the current Security-query mapping.
+        /// - The `http`, `https`, `ftp`, `ftps`, `smb`, and `ssh` schemes set the
+        ///   protocol. Other schemes, including `sftp`, don't set a protocol.
+        /// - A URL without a scheme is treated as `https`.
+        /// - An explicit port is always copied. Otherwise `http` uses port `80` and
+        ///   `https` uses port `443`; other schemes don't set a port.
+        /// - The host is copied when present.
+        /// - An empty path is stored as `/`.
+        ///
+        /// ``KeychainPassword/internet(url:authenticationType:service:account:accessGroup:synchronizable:accessibility:accessControl:label:comment:description:contextProvider:)``
+        /// uses the same mapping.
         case url(URL, AuthenticationType = .htmlForm)
 
         /// Matches an internet protocol (`kSecAttrProtocol`).
@@ -185,94 +191,7 @@
         var query: CFDictionary {
             var query = [String: AnyObject]()
             for item in self {
-                switch item {
-                    case let .securityClass(value):
-                        query[kSecClass as String] = value.queryValue as AnyObject?
-                    case let .service(value):
-                        query[kSecAttrService as String] = value as AnyObject?
-                    case let .securityDomain(value):
-                        query[kSecAttrSecurityDomain as String] = value as AnyObject?
-                    case let .synchronizable(value):
-                        if let value {
-                            query[kSecAttrSynchronizable as String] = value ? kCFBooleanTrue : kCFBooleanFalse
-                        }
-                    case let .account(value):
-                        query[kSecAttrAccount as String] = value as AnyObject?
-                    case let .accessGroup(value):
-                        query[kSecAttrAccessGroup as String] = value as AnyObject?
-                    case .limitOne:
-                        query[kSecMatchLimit as String] = kSecMatchLimitOne
-                    case .limitAll:
-                        query[kSecMatchLimit as String] = kSecMatchLimitAll
-                    case let .returnAttributes(value):
-                        query[kSecReturnAttributes as String] = value ? kCFBooleanTrue : kCFBooleanFalse
-                    case let .returnData(value):
-                        query[kSecReturnData as String] = value ? kCFBooleanTrue : kCFBooleanFalse
-                    case let .accessControl(value):
-                        query[kSecAttrAccessControl as String] = value as AnyObject?
-                    case let .data(value):
-                        query[kSecValueData as String] = value as AnyObject?
-                    case let .description(value):
-                        query[kSecAttrDescription as String] = value as AnyObject?
-                    case let .label(value):
-                        query[kSecAttrLabel as String] = value as AnyObject?
-                    case let .comment(value):
-                        query[kSecAttrComment as String] = value as AnyObject?
-                    case let .urlAuthenticationType(value):
-                        query[kSecAttrAuthenticationType as String] = value.queryValue as AnyObject?
-                    case let .accessible(value):
-                        query[kSecAttrAccessible as String] = value.queryValue
-                    case let .urlHost(value):
-                        query[kSecAttrServer as String] = value as AnyObject?
-                    case let .urlScheme(value):
-                        query[kSecAttrProtocol as String] = value.queryValue as AnyObject?
-                    case let .urlPort(value):
-                        query[kSecAttrPort as String] = NSNumber(value: value) as AnyObject?
-                    case let .urlPath(value):
-                        query[kSecAttrPath as String] = value as AnyObject?
-                    case let .url(url, type):
-                        query[kSecAttrAuthenticationType as String] = type.queryValue as AnyObject?
-
-                        if let scheme = url.scheme {
-                            switch scheme {
-                                case "http":
-                                    query[kSecAttrProtocol as String] = KeychainCriterion.InternetProtocol.http.queryValue as AnyObject?
-                                case "https":
-                                    query[kSecAttrProtocol as String] = KeychainCriterion.InternetProtocol.https.queryValue as AnyObject?
-                                case "ftp":
-                                    query[kSecAttrProtocol as String] = KeychainCriterion.InternetProtocol.ftp.queryValue as AnyObject?
-                                case "sftp",
-                                     "ftps":
-                                    query[kSecAttrProtocol as String] = KeychainCriterion.InternetProtocol.ftps.queryValue as AnyObject?
-                                case "ssh":
-                                    query[kSecAttrProtocol as String] = KeychainCriterion.InternetProtocol.ssh.queryValue as AnyObject?
-                                case "smb":
-                                    query[kSecAttrProtocol as String] = KeychainCriterion.InternetProtocol.smb.queryValue as AnyObject?
-                                default:
-                                    break
-                            }
-                        }
-
-                        if let host = url.host {
-                            query[kSecAttrServer as String] = host as AnyObject?
-                        }
-
-                        if let port = url.port {
-                            query[kSecAttrPort as String] = NSNumber(value: port) as AnyObject?
-                        }
-
-                        if !url.path.isEmpty, url.path != "/" {
-                            query[kSecAttrPath as String] = url.path as AnyObject?
-                        }
-                        #if !os(tvOS)
-                            #if canImport(LocalAuthentication)
-                                case let .localAuthenticationContext(value):
-                                    query[kSecUseAuthenticationContext as String] = value as AnyObject?
-                                case let .localAuthenticationContextProvider(callback):
-                                    query[kSecUseAuthenticationContext as String] = callback() as AnyObject?
-                            #endif
-                        #endif
-                }
+                item.apply(to: &query)
             }
             return query as CFDictionary
         }
@@ -437,6 +356,99 @@
             return KeychainRecord(existingItem)
         }
 
+    }
+
+    extension KeychainCriterion {
+
+        /// Writes this criterion's Security attribute into a query dictionary.
+        func apply(to query: inout [String: AnyObject]) {
+            switch self {
+                case let .securityClass(value):
+                    query[kSecClass as String] = value.queryValue as AnyObject?
+                case let .service(value):
+                    query[kSecAttrService as String] = value as AnyObject?
+                case let .securityDomain(value):
+                    query[kSecAttrSecurityDomain as String] = value as AnyObject?
+                case let .synchronizable(value):
+                    if let value {
+                        query[kSecAttrSynchronizable as String] = value ? kCFBooleanTrue : kCFBooleanFalse
+                    }
+                case let .account(value):
+                    query[kSecAttrAccount as String] = value as AnyObject?
+                case let .accessGroup(value):
+                    query[kSecAttrAccessGroup as String] = value as AnyObject?
+                case .limitOne:
+                    query[kSecMatchLimit as String] = kSecMatchLimitOne
+                case .limitAll:
+                    query[kSecMatchLimit as String] = kSecMatchLimitAll
+                case let .returnAttributes(value):
+                    query[kSecReturnAttributes as String] = value ? kCFBooleanTrue : kCFBooleanFalse
+                case let .returnData(value):
+                    query[kSecReturnData as String] = value ? kCFBooleanTrue : kCFBooleanFalse
+                case let .accessControl(value):
+                    query[kSecAttrAccessControl as String] = value as AnyObject?
+                case let .data(value):
+                    query[kSecValueData as String] = value as AnyObject?
+                case let .description(value):
+                    query[kSecAttrDescription as String] = value as AnyObject?
+                case let .label(value):
+                    query[kSecAttrLabel as String] = value as AnyObject?
+                case let .comment(value):
+                    query[kSecAttrComment as String] = value as AnyObject?
+                case let .urlAuthenticationType(value):
+                    query[kSecAttrAuthenticationType as String] = value.queryValue as AnyObject?
+                case let .accessible(value):
+                    query[kSecAttrAccessible as String] = value.queryValue
+                case let .urlHost(value):
+                    query[kSecAttrServer as String] = value as AnyObject?
+                case let .urlScheme(value):
+                    query[kSecAttrProtocol as String] = value.queryValue as AnyObject?
+                case let .urlPort(value):
+                    query[kSecAttrPort as String] = NSNumber(value: value) as AnyObject?
+                case let .urlPath(value):
+                    query[kSecAttrPath as String] = value as AnyObject?
+                case let .url(url, type):
+                    for criterion in Self.urlCriteria(url, authenticationType: type) {
+                        criterion.apply(to: &query)
+                    }
+                    #if !os(tvOS)
+                        #if canImport(LocalAuthentication)
+                            case let .localAuthenticationContext(value):
+                                query[kSecUseAuthenticationContext as String] = value as AnyObject?
+                            case let .localAuthenticationContextProvider(callback):
+                                query[kSecUseAuthenticationContext as String] = callback() as AnyObject?
+                        #endif
+                    #endif
+            }
+        }
+
+        /// The internet-password criteria that represent a URL.
+        ///
+        /// See ``KeychainCriterion/url(_:_:)`` for the mapping rules.
+        static func urlCriteria(_ url: URL, authenticationType: AuthenticationType) -> [KeychainCriterion] {
+            var criteria: [KeychainCriterion] = []
+            let internetProtocol: InternetProtocol? = if let scheme = url.scheme {
+                InternetProtocol(urlScheme: scheme)
+            } else {
+                .https
+            }
+
+            if let internetProtocol {
+                criteria.append(.urlScheme(internetProtocol))
+            }
+
+            if let port = url.port ?? internetProtocol?.defaultPort {
+                criteria.append(.urlPort(port))
+            }
+
+            if let host = url.host {
+                criteria.append(.urlHost(host))
+            }
+
+            criteria.append(.urlPath(url.path.isEmpty ? "/" : url.path))
+            criteria.append(.urlAuthenticationType(authenticationType))
+            return criteria
+        }
     }
 
 #endif
