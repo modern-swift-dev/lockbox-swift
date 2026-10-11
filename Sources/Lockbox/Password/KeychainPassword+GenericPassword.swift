@@ -111,7 +111,8 @@
 
         /// Returns handles for all generic-password items in a service.
         ///
-        /// The returned handles preserve each matching item's account and the supplied
+        /// The search includes synchronizable and device-only items. The returned handles
+        /// preserve each matching item's account and synchronizability, and the supplied
         /// access group. They can be used to retrieve, update, or delete individual items.
         ///
         /// - Parameters:
@@ -124,22 +125,34 @@
             service: String,
             accessGroup: String? = nil
         ) throws -> [KeychainPassword] {
-            let accounts = try KeychainCriterion.findAll(
+            let records = try KeychainCriterion.findAll(
                 type: .genericPassword,
                 service: service,
                 accessGroup: accessGroup
             )
-            return accounts.map {
-                KeychainPassword.generic(
-                    service: service,
-                    account: $0.account,
-                    accessGroup: accessGroup
-                )
-            }
+            return genericPasswords(from: records, service: service, accessGroup: accessGroup)
         }
     }
 
     extension KeychainPassword {
+        /// Builds handles that keep each record's account and synchronizability.
+        static func genericPasswords(
+            from records: [KeychainRecord],
+            service: String,
+            accessGroup: String?
+        ) -> [KeychainPassword] {
+            records.map {
+                makeGeneric(
+                    service: service,
+                    account: $0.account,
+                    accessGroup: accessGroup,
+                    synchronizable: $0.synchronizable,
+                    attributes: [],
+                    authenticationCriterion: nil
+                )
+            }
+        }
+
         static func makeGeneric(
             service: String,
             account: String,

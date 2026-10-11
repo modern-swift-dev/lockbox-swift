@@ -37,6 +37,13 @@
         /// Pass `nil` to omit this attribute from the query.
         case synchronizable(Bool?)
 
+        /// Matches both synchronizable and device-only items
+        /// (`kSecAttrSynchronizableAny`).
+        ///
+        /// Use this case only in search, update, and delete queries. Keychain Services
+        /// rejects it when creating an item.
+        case synchronizableAny
+
         /// Matches the account attribute (`kSecAttrAccount`).
         case account(String)
 
@@ -124,8 +131,9 @@
 
         /// Returns records for all matching items in a service and optional access group.
         ///
-        /// Returned records contain attributes but not secret data. If no item matches,
-        /// this method returns an empty array.
+        /// Returned records contain attributes but not secret data. Both synchronizable
+        /// and device-only items are returned. If no item matches, this method returns
+        /// an empty array.
         ///
         /// - Parameters:
         ///   - type: The Security item class to search. Defaults to generic passwords.
@@ -141,22 +149,12 @@
             accessGroup: String?,
             accessibility: Accessibility? = nil
         ) throws -> [KeychainRecord] {
-            // Build a query for all items that match the service and access group.
-            var criteria: [KeychainCriterion] = [
-                .securityClass(type),
-                .service(service),
-                .limitAll,
-                .returnAttributes(true),
-                .returnData(false)
-            ]
-
-            if let accessibility {
-                criteria.append(.accessible(accessibility))
-            }
-
-            if let accessGroup {
-                criteria.append(.accessGroup(accessGroup))
-            }
+            let criteria = findAllCriteria(
+                type: type,
+                service: service,
+                accessGroup: accessGroup,
+                accessibility: accessibility
+            )
 
             // Fetch matching items from the keychain.
             var queryResult: AnyObject?
@@ -179,6 +177,35 @@
 
             // All account for this service / access group
             return resultData.compactMap { KeychainRecord($0) }
+        }
+    }
+
+    extension KeychainCriterion {
+        /// The query used by ``findAll(type:service:accessGroup:accessibility:)``.
+        static func findAllCriteria(
+            type: SecurityClass,
+            service: String,
+            accessGroup: String?,
+            accessibility: Accessibility?
+        ) -> [KeychainCriterion] {
+            var criteria: [KeychainCriterion] = [
+                .securityClass(type),
+                .service(service),
+                .synchronizableAny,
+                .limitAll,
+                .returnAttributes(true),
+                .returnData(false)
+            ]
+
+            if let accessibility {
+                criteria.append(.accessible(accessibility))
+            }
+
+            if let accessGroup {
+                criteria.append(.accessGroup(accessGroup))
+            }
+
+            return criteria
         }
     }
 
@@ -373,6 +400,8 @@
                     if let value {
                         query[kSecAttrSynchronizable as String] = value ? kCFBooleanTrue : kCFBooleanFalse
                     }
+                case .synchronizableAny:
+                    query[kSecAttrSynchronizable as String] = kSecAttrSynchronizableAny
                 case let .account(value):
                     query[kSecAttrAccount as String] = value as AnyObject?
                 case let .accessGroup(value):
