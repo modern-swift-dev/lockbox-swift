@@ -106,7 +106,19 @@ private final class ExampleViewModel: ObservableObject {
     @Published private(set) var status = "Choose an operation to begin."
     @Published private(set) var isError = false
 
-    private let service = Bundle.main.bundleIdentifier ?? "com.example.LockboxExample"
+    private let service: String
+    private let biometricService: BiometricService
+
+    init() {
+        let service = Bundle.main.bundleIdentifier ?? "com.example.LockboxExample"
+        self.service = service
+        biometricService = BiometricService(
+            service: service,
+            localAuthenticationService: LocalAuthenticationService(
+                reason: "Authenticate to access your Lockbox example credentials."
+            )
+        )
+    }
 
     private var genericKeychainPassword: KeychainPassword {
         KeychainPassword.generic(service: service, account: genericAccount)
@@ -126,7 +138,6 @@ private final class ExampleViewModel: ObservableObject {
     }
 
     var biometricAvailability: String {
-        let biometricService = makeBiometricService()
         if !biometricService.supportedByDevice {
             return "This device does not support Face ID or Touch ID."
         }
@@ -214,7 +225,7 @@ private final class ExampleViewModel: ObservableObject {
 
     func saveBiometricCredentials() async {
         do {
-            try await makeBiometricService().save(username: biometricEmail, password: biometricPassword)
+            try await biometricService.save(username: biometricEmail, password: biometricPassword)
             reportSuccess("Biometric credentials saved.")
         } catch {
             report(error, action: "saving biometric credentials")
@@ -223,7 +234,7 @@ private final class ExampleViewModel: ObservableObject {
 
     func retrieveBiometricCredentials() async {
         do {
-            let result = try await makeBiometricService().retrieve()
+            let result = try await biometricService.retrieve()
             switch result {
                 case let .success(username, password),
                      let .biometricChanged(username, password):
@@ -237,18 +248,9 @@ private final class ExampleViewModel: ObservableObject {
     }
 
     func forgetBiometricCredentials() {
-        makeBiometricService().forget()
+        biometricService.forget()
         biometricPassword = ""
         reportSuccess("Biometric credentials deleted.")
-    }
-
-    private func makeBiometricService() -> BiometricService {
-        BiometricService(
-            service: service,
-            localAuthenticationService: LocalAuthenticationService(
-                reason: "Authenticate to access your Lockbox example credentials."
-            )
-        )
     }
 
     private func reportSuccess(_ message: String) {
