@@ -55,7 +55,7 @@ jobs:
       - name: Install xcbeautify
         run: |
           brew install mint
-          mint install cpisciotta/xcbeautify
+          mint install "$(grep cpisciotta/xcbeautify Mintfile)"
       - name: Verify Xcode 26.6 and Swift 6.3
         run: |
           xcodebuild -version | grep -F 'Xcode 26.6' 2>&1 | mint run --no-install cpisciotta/xcbeautify -q
@@ -87,6 +87,6 @@ jobs:
       - name: Install xcbeautify
         run: |
           brew install mint
-          mint install cpisciotta/xcbeautify
+          mint install "$(grep cpisciotta/xcbeautify Mintfile)"
       - name: Build example app
         run: make test-examples
