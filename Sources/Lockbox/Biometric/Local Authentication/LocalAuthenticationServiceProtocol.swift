@@ -49,7 +49,10 @@
             /// Records the current biometric baseline after credentials have been successfully saved.
             func recordBiometricState() throws
 
-            /// Invalidates the context and clears its cached authentication state.
+            /// Discards the context's cached authentication state.
+            ///
+            /// After invalidation, ``context`` must return a context that can still evaluate
+            /// authentication.
             func invalidate()
         }
 

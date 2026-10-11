@@ -19,7 +19,7 @@
         ///     reason: nil
         /// )
         /// ```
-        public final class LocalAuthenticationService: LocalAuthenticationServiceProtocol {
+        public final class LocalAuthenticationService: LocalAuthenticationServiceProtocol, @unchecked Sendable {
 
             /// The default localized explanation shown in authentication prompts.
             public let reason: String
@@ -33,8 +33,18 @@
             /// The strategy used when evaluating keychain access.
             public let mode: LAContext.SecurityMode
 
+            /// Guards `currentContext`, which ``invalidate()`` replaces.
+            private let lock = NSLock()
+
+            private var currentContext: LAContext
+
             /// The context shared with Local Authentication and keychain operations.
-            public let context: LAContext
+            ///
+            /// ``invalidate()`` replaces this context, so read it for each operation
+            /// instead of storing it.
+            public var context: LAContext {
+                lock.withLock { currentContext }
+            }
 
             /// The biometric authentication technology supported by the device.
             ///
@@ -65,12 +75,15 @@
                 self.fallbackTitle = fallbackTitle
                 self.cancelTitle = cancelTitle
                 self.mode = mode
+                currentContext = Self.makeContext(reason: reason, fallbackTitle: fallbackTitle, cancelTitle: cancelTitle)
+            }
 
-                let ctx = LAContext()
-                ctx.localizedReason = reason
-                ctx.localizedFallbackTitle = fallbackTitle
-                ctx.localizedCancelTitle = cancelTitle
-                context = ctx
+            private static func makeContext(reason: String, fallbackTitle: String?, cancelTitle: String?) -> LAContext {
+                let context = LAContext()
+                context.localizedReason = reason
+                context.localizedFallbackTitle = fallbackTitle
+                context.localizedCancelTitle = cancelTitle
+                return context
             }
 
             /// Determines whether the context can evaluate an authentication policy.
@@ -121,9 +134,19 @@
                 )
             }
 
-            /// Invalidates the context and clears its cached authentication state.
+            /// Invalidates the current context and replaces it with a new one.
+            ///
+            /// Any authentication cached by the current context is discarded, and
+            /// evaluations already in progress on it are cancelled. Later operations use
+            /// the new context, so the service remains usable.
             public func invalidate() {
-                context.invalidate()
+                let replacement = Self.makeContext(reason: reason, fallbackTitle: fallbackTitle, cancelTitle: cancelTitle)
+                let invalidated = lock.withLock {
+                    let previous = currentContext
+                    currentContext = replacement
+                    return previous
+                }
+                invalidated.invalidate()
             }
         }
     #endif

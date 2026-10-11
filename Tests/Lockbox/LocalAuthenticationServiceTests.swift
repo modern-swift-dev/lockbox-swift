@@ -12,9 +12,36 @@
             let available = service.context.canEvaluatePolicy(policy, error: nil)
             #expect(service.isProperlyConfigured(for: policy) == available)
 
+            let previous = service.context
             service.invalidate()
-            #expect(!service.context.canEvaluatePolicy(policy, error: nil))
-            #expect(!service.isProperlyConfigured(for: policy))
+            #expect(!previous.canEvaluatePolicy(policy, error: nil))
+            #expect(service.isProperlyConfigured(for: policy) == available)
+            #expect(service.context.canEvaluatePolicy(policy, error: nil) == available)
+        }
+
+        @Test func invalidateReplacesContextWithSameConfiguration() {
+            let service = LocalAuthenticationService(reason: "Unlock", fallbackTitle: "Use Password", cancelTitle: "Not Now")
+            let previous = service.context
+
+            service.invalidate()
+            let replacement = service.context
+
+            #expect(replacement !== previous)
+            #expect(replacement.localizedReason == "Unlock")
+            #expect(replacement.localizedFallbackTitle == "Use Password")
+            #expect(replacement.localizedCancelTitle == "Not Now")
+            #expect(service.context === replacement)
+        }
+
+        @Test func invalidatedContextReportsInvalidContext() {
+            let service = LocalAuthenticationService(reason: "Unlock")
+            let previous = service.context
+
+            service.invalidate()
+
+            var error: NSError?
+            _ = previous.canEvaluatePolicy(.deviceOwnerAuthentication, error: &error)
+            #expect(error?.code == LAError.Code.invalidContext.rawValue)
         }
 
         #if !targetEnvironment(simulator)
