@@ -131,6 +131,38 @@
                 #expect(retrieved == nil)
             }
 
+            @Test func writeAttributesAreStoredAndReplacedOnUpdate() throws {
+                try skipIfNoKeychainAccess()
+                let account = "test_attributes_\(UUID().uuidString)"
+                defer { cleanup(service: testService, account: account) }
+
+                let first = KeychainPassword.generic(
+                    service: testService,
+                    account: account,
+                    accessibility: .whenUnlocked,
+                    label: "First label",
+                    comment: "First comment",
+                    description: "First description"
+                )
+                try first.set(string: "first")
+
+                let second = KeychainPassword.generic(
+                    service: testService,
+                    account: account,
+                    accessibility: .afterFirstUnlock,
+                    label: "Second label",
+                    comment: "Second comment",
+                    description: "Second description"
+                )
+                try second.set(string: "second")
+
+                let record = try #require(try second.retrieve())
+                #expect(record.label == "Second label")
+                #expect(record.comment == "Second comment")
+                #expect(record.description == "Second description")
+                #expect(try first.getString() == "second")
+            }
+
             @Test func getStringReturnsNilWhenNotExists() throws {
                 try skipIfNoKeychainAccess()
                 let account = "nonexistent_\(UUID().uuidString)"

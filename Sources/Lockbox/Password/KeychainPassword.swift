@@ -4,8 +4,8 @@
 
     /// A handle for a single generic or internet password item in the keychain.
     ///
-    /// Create a handle with ``generic(service:account:accessGroup:synchronizable:accessControl:contextProvider:)``
-    /// or ``internet(url:authenticationType:service:account:accessGroup:synchronizable:accessControl:contextProvider:)``,
+    /// Create a handle with ``generic(service:account:accessGroup:synchronizable:accessibility:accessControl:label:comment:description:contextProvider:)``
+    /// or ``internet(url:authenticationType:service:account:accessGroup:synchronizable:accessibility:accessControl:label:comment:description:contextProvider:)``,
     /// then use ``set(data:)``, ``set(string:)``, ``getData()``, ``getString()``, or
     /// ``remove()`` to operate on its matching item. A handle does not read or retain
     /// the item's secret until a retrieval method is called.
@@ -66,6 +66,33 @@
                 }
                 return true
             }
+        }
+
+        /// Builds the write-only attributes shared by the password factories.
+        static func writeAttributes(
+            accessibility: KeychainCriterion.Accessibility?,
+            accessControl: SecAccessControl?,
+            label: String?,
+            comment: String?,
+            description: String?
+        ) -> [KeychainCriterion] {
+            var attributes: [KeychainCriterion] = []
+            if let accessibility {
+                attributes.append(.accessible(accessibility))
+            }
+            if let accessControl {
+                attributes.append(.accessControl(accessControl))
+            }
+            if let label {
+                attributes.append(.label(label))
+            }
+            if let comment {
+                attributes.append(.comment(comment))
+            }
+            if let description {
+                attributes.append(.description(description))
+            }
+            return attributes
         }
 
         /// Creates the item, or updates it when an equivalent item already exists.

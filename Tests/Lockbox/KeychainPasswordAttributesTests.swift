@@ -52,6 +52,47 @@
                 #expect(attributes[kSecValueData as String] as? Data == data)
             }
 
+            @Test func writeAttributesAreExcludedFromMatchingQuery() throws {
+                let password = KeychainPassword.generic(
+                    service: "com.example.attributes",
+                    account: "user",
+                    accessibility: .afterFirstUnlock,
+                    label: "Label",
+                    comment: "Comment",
+                    description: "Description"
+                )
+
+                let query = try #require(password.criteria.query as? [String: AnyObject])
+                #expect(query[kSecAttrAccessible as String] == nil)
+                #expect(query[kSecAttrLabel as String] == nil)
+                #expect(query[kSecAttrComment as String] == nil)
+                #expect(query[kSecAttrDescription as String] == nil)
+            }
+
+            @Test func writeAttributesAreAppliedOnCreateAndUpdate() throws {
+                let url = try #require(URL(string: "https://example.com/login"))
+                let password = KeychainPassword.internet(
+                    url: url,
+                    service: "com.example.attributes",
+                    account: "user",
+                    accessibility: .afterFirstUnlock,
+                    label: "Label",
+                    comment: "Comment",
+                    description: "Description"
+                )
+                let queries = [
+                    try #require(password.createCriteria.query as? [String: AnyObject]),
+                    try #require(password.updateAttributes(data: Data()).query as? [String: AnyObject])
+                ]
+
+                for query in queries {
+                    #expect(query[kSecAttrAccessible as String] as? String == kSecAttrAccessibleAfterFirstUnlock as String)
+                    #expect(query[kSecAttrLabel as String] as? String == "Label")
+                    #expect(query[kSecAttrComment as String] as? String == "Comment")
+                    #expect(query[kSecAttrDescription as String] as? String == "Description")
+                }
+            }
+
             @Test func handleWithoutAttributesCreatesWithCriteriaOnly() {
                 let password = KeychainPassword.generic(service: "com.example.attributes", account: "user")
 

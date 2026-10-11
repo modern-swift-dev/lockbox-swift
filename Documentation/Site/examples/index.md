@@ -33,6 +33,19 @@ try token.set(data: tokenData)
 let savedToken = try token.getData()
 ```
 
+Pass `accessibility`, `label`, `comment`, or `description` to set item attributes when the item is written. These attributes don't take part in finding the item, so a later save with different values updates the same item.
+
+Background-readable token
+
+```swift
+let backgroundToken = KeychainPassword.generic(
+    service: "com.example.session",
+    account: "background",
+    accessibility: .afterFirstUnlockThisDeviceOnly,
+    label: "Session token"
+)
+```
+
 ## Internet password
 
 Attach the credential to its URL. Lockbox turns the URL into the keychain attributes needed by an internet password item.

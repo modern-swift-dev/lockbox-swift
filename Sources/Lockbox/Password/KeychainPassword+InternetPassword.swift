@@ -24,8 +24,13 @@
             ///     have the corresponding entitlement.
             ///   - synchronizable: Whether the item participates in iCloud Keychain syncing.
             ///     Pass `nil` to omit this attribute from the query.
+            ///   - accessibility: When the item's data is available. Applied when the item is
+            ///     written. Pass `nil` to use the Security framework's default.
             ///   - accessControl: Optional Security access-control policy, such as one requiring
-            ///     user presence or biometrics.
+            ///     user presence or biometrics. Applied only when the item is created.
+            ///   - label: An optional user-visible label, applied when the item is written.
+            ///   - comment: An optional comment, applied when the item is written.
+            ///   - description: An optional kind description, applied when the item is written.
             ///   - contextProvider: An optional factory for the Local Authentication context
             ///     supplied to Security framework queries. It is useful with `accessControl`.
             /// - Returns: A handle for the internet-password item described by these attributes.
@@ -37,14 +42,21 @@
                 account: String,
                 accessGroup: String? = nil,
                 synchronizable: Bool? = nil,
+                accessibility: KeychainCriterion.Accessibility? = nil,
                 accessControl: SecAccessControl? = nil,
+                label: String? = nil,
+                comment: String? = nil,
+                description: String? = nil,
                 contextProvider: LAContextProvider? = nil
             ) -> KeychainPassword {
 
-                var attributes: [KeychainCriterion] = []
-                if let accessControl {
-                    attributes.append(.accessControl(accessControl))
-                }
+                let attributes = writeAttributes(
+                    accessibility: accessibility,
+                    accessControl: accessControl,
+                    label: label,
+                    comment: comment,
+                    description: description
+                )
 
                 var criteria: [KeychainCriterion] = [
                     .securityClass(.internetPassword),
