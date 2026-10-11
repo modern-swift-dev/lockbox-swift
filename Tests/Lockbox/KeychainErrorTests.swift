@@ -1,21 +1,14 @@
-#if os(macOS) || os(iOS)
+#if canImport(Security)
     import Foundation
     @testable import Lockbox
     import Testing
 
-    @Suite(.serialized) struct KeychainErrorTests {
+    struct KeychainErrorTests {
 
         @Test func descriptionSurvivesErrorErasureAndNSErrorBridging() {
             let error: any Error = KeychainError.underlyingError(status: -25300, message: "Item not found")
             #expect(error.localizedDescription == "-25300 - Item not found")
             #expect((error as NSError).localizedDescription == "-25300 - Item not found")
-            let encodingError: any Error = KeychainError.encodingFailed
-            #expect(encodingError.localizedDescription == "encoding failed")
-        }
-
-        @Test func encodingFailedLocalizedDescription() {
-            let error = KeychainError.encodingFailed
-            #expect(error.localizedDescription == "encoding failed")
         }
 
         @Test func underlyingErrorWithMessageLocalizedDescription() {
@@ -31,6 +24,31 @@
         @Test func underlyingErrorWithEmptyMessage() {
             let error = KeychainError.underlyingError(status: -12345, message: "")
             #expect(error.localizedDescription == "-12345 - ")
+        }
+
+        @Test(arguments: [
+            (errSecItemNotFound, KeychainError.itemNotFound),
+            (errSecDuplicateItem, .duplicateItem),
+            (errSecInteractionNotAllowed, .interactionNotAllowed),
+            (errSecMissingEntitlement, .missingEntitlement),
+            (errSecAuthFailed, .authenticationFailed),
+            (errSecUserCanceled, .userCanceled)
+        ])
+        func knownStatusesMapToTypedCases(status: OSStatus, expected: KeychainError) {
+            let error = KeychainError(status: status)
+            #expect(error == expected)
+            #expect(error.status == status)
+        }
+
+        @Test func unknownStatusKeepsStatusAndSystemMessage() {
+            let error = KeychainError(status: errSecDecode)
+            #expect(error == .underlyingError(status: errSecDecode, message: errSecDecode.errorMessage))
+            #expect(error.status == errSecDecode)
+        }
+
+        @Test func typedCaseDescriptionIncludesStatusAndSystemMessage() throws {
+            let message = try #require(errSecDuplicateItem.errorMessage)
+            #expect(KeychainError.duplicateItem.localizedDescription == "\(errSecDuplicateItem) - \(message)")
         }
     }
 #endif

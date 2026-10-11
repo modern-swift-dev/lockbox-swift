@@ -18,7 +18,7 @@
             try [KeychainCriterion].upsert(
                 create: {
                     // Another writer has already inserted the same primary key.
-                    throw KeychainError.underlyingError(status: errSecDuplicateItem, message: nil)
+                    throw KeychainError.duplicateItem
                 },
                 update: { updates += 1 }
             )
@@ -29,11 +29,11 @@
             var updates = 0
             do {
                 try [KeychainCriterion].upsert(
-                    create: { throw KeychainError.underlyingError(status: errSecAuthFailed, message: nil) },
+                    create: { throw KeychainError.authenticationFailed },
                     update: { updates += 1 }
                 )
                 Issue.record("Expected the creation error")
-            } catch KeychainError.underlyingError(status: errSecAuthFailed, message: _) {
+            } catch KeychainError.authenticationFailed {
                 #expect(updates == 0)
             } catch {
                 Issue.record("Unexpected error: \(error)")
@@ -43,11 +43,11 @@
         @Test func updateErrorAfterDuplicateIsPreserved() {
             do {
                 try [KeychainCriterion].upsert(
-                    create: { throw KeychainError.underlyingError(status: errSecDuplicateItem, message: nil) },
-                    update: { throw KeychainError.underlyingError(status: errSecItemNotFound, message: nil) }
+                    create: { throw KeychainError.duplicateItem },
+                    update: { throw KeychainError.itemNotFound }
                 )
                 Issue.record("Expected a concurrent deletion to remain visible")
-            } catch KeychainError.underlyingError(status: errSecItemNotFound, message: _) {
+            } catch KeychainError.itemNotFound {
                 // A different process can delete the item between the add and update.
             } catch {
                 Issue.record("Unexpected error: \(error)")

@@ -150,7 +150,7 @@
         ///   - accessibility: An optional accessibility policy to match.
         ///   - useDataProtectionKeychain: Whether macOS searches the data protection keychain.
         /// - Returns: Attribute-only records for all matching items.
-        /// - Throws: ``KeychainError/underlyingError(status:message:)`` when the
+        /// - Throws: ``KeychainError`` when the
         ///   Security framework cannot perform the query.
         static func findAll(
             type: KeychainCriterion.SecurityClass = .genericPassword,
@@ -180,7 +180,7 @@
             }
 
             if !status.isSuccessful {
-                throw KeychainError.underlyingError(status: status, message: status.errorMessage)
+                throw KeychainError(status: status)
             }
 
             // Cast the query result to an array of dictionaries.
@@ -239,7 +239,7 @@
         /// Creates a Keychain item from these criteria and the supplied secret data.
         ///
         /// - Parameter data: The bytes stored as `kSecValueData`.
-        /// - Throws: ``KeychainError/underlyingError(status:message:)`` if creation
+        /// - Throws: ``KeychainError`` if creation
         ///   fails, including when an equivalent item already exists.
         func create(data: Data) throws {
             var createQuery: [KeychainCriterion] = []
@@ -247,7 +247,7 @@
             createQuery.append(.data(data))
             let status = SecItemAdd(createQuery.query, nil)
             if !status.isSuccessful {
-                throw KeychainError.underlyingError(status: status, message: status.errorMessage)
+                throw KeychainError(status: status)
             }
         }
 
@@ -258,7 +258,7 @@
         ///   - description: An optional replacement item description.
         ///   - comment: An optional replacement item comment.
         ///   - label: An optional replacement item label.
-        /// - Throws: ``KeychainError/underlyingError(status:message:)`` if the
+        /// - Throws: ``KeychainError`` if the
         ///   Security framework cannot update the matching item or items.
         func update(
             data: Data,
@@ -287,18 +287,18 @@
         internal func update(attributes: [KeychainCriterion]) throws {
             let status = SecItemUpdate(query, attributes.query)
             if !status.isSuccessful {
-                throw KeychainError.underlyingError(status: status, message: status.errorMessage)
+                throw KeychainError(status: status)
             }
         }
 
         /// Deletes every Keychain item matching these criteria.
         ///
-        /// - Throws: ``KeychainError/underlyingError(status:message:)`` if no matching
+        /// - Throws: ``KeychainError`` if no matching
         ///   item exists or the Security framework cannot delete it.
         func delete() throws {
             let status = SecItemDelete(query)
             if !status.isSuccessful {
-                throw KeychainError.underlyingError(status: status, message: status.errorMessage)
+                throw KeychainError(status: status)
             }
         }
 
@@ -308,7 +308,7 @@
         /// Concurrent writers can create the same item without a duplicate-item error.
         /// A concurrent deletion between the add and update can still cause an error.
         /// - Parameter data: The bytes to create or use as replacement data.
-        /// - Throws: ``KeychainError/underlyingError(status:message:)`` if the create
+        /// - Throws: ``KeychainError`` if the create
         ///   or update operation fails.
         func createOrUpdate(data: Data) throws {
             try Self.upsert(
@@ -321,7 +321,7 @@
         internal static func upsert(create: () throws -> Void, update: () throws -> Void) throws {
             do {
                 try create()
-            } catch KeychainError.underlyingError(status: errSecDuplicateItem, message: _) {
+            } catch KeychainError.duplicateItem {
                 try update()
             }
         }
@@ -329,7 +329,7 @@
         /// Reports whether at least one Keychain item matches these criteria.
         ///
         /// - Returns: `true` when an item is found; otherwise, `false`.
-        /// - Throws: ``KeychainError/underlyingError(status:message:)`` when the
+        /// - Throws: ``KeychainError`` when the
         ///   Security framework cannot perform the lookup.
         func exists() throws -> Bool {
             // Build a query to find the item that matches the service, account and
@@ -351,7 +351,7 @@
             }
 
             if !status.isSuccessful {
-                throw KeychainError.underlyingError(status: status, message: status.errorMessage)
+                throw KeychainError(status: status)
             }
 
             return true
@@ -363,7 +363,7 @@
         /// specific enough to identify the intended item.
         /// - Returns: The matching record, or `nil` when no item matches or the result
         ///   cannot be represented as item attributes.
-        /// - Throws: ``KeychainError/underlyingError(status:message:)`` when the
+        /// - Throws: ``KeychainError`` when the
         ///   Security framework cannot perform the lookup.
         func retrieve() throws -> KeychainRecord? {
 
@@ -386,7 +386,7 @@
             }
 
             if !status.isSuccessful {
-                throw KeychainError.underlyingError(status: status, message: status.errorMessage)
+                throw KeychainError(status: status)
             }
 
             guard let existingItem = queryResult as? [String: AnyObject] else {

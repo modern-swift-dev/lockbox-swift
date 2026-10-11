@@ -3,9 +3,6 @@
     @testable import Lockbox
     import Testing
 
-    /// Error code for missing entitlements (common in test environments)
-    private let errSecMissingEntitlement: OSStatus = -34018
-
     /// Checks if the keychain is accessible (has proper entitlements)
     private func isKeychainAccessible() -> Bool {
         let testCriteria: [KeychainCriterion] = [
@@ -17,7 +14,7 @@
             _ = try testCriteria.exists()
             return true
         } catch let error as KeychainError {
-            if case let .underlyingError(status, _) = error, status == errSecMissingEntitlement {
+            if error == .missingEntitlement {
                 return false
             }
             return true

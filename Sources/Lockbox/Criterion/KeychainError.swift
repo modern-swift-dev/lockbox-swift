@@ -1,30 +1,74 @@
 #if canImport(Security)
     import Foundation
 
-    /// Errors produced while encoding data or working with Keychain Services.
-    public enum KeychainError: LocalizedError {
+    /// Errors produced while working with Keychain Services.
+    ///
+    /// Statuses that callers commonly handle have their own cases. Every other status
+    /// is reported as ``underlyingError(status:message:)``.
+    public enum KeychainError: LocalizedError, Equatable {
 
-        /// The value could not be encoded into the data required by a Keychain operation.
-        case encodingFailed
+        /// No item matches the query (`errSecItemNotFound`).
+        case itemNotFound
 
-        /// A Security-framework operation failed.
+        /// An item with the same primary key already exists (`errSecDuplicateItem`).
+        case duplicateItem
+
+        /// The item can't be accessed without user interaction, for example because the
+        /// device is locked (`errSecInteractionNotAllowed`).
+        case interactionNotAllowed
+
+        /// The app lacks the keychain entitlement the query requires
+        /// (`errSecMissingEntitlement`).
+        case missingEntitlement
+
+        /// Authentication for the item failed (`errSecAuthFailed`).
+        case authenticationFailed
+
+        /// The user cancelled the authentication prompt (`errSecUserCanceled`).
+        case userCanceled
+
+        /// A Security-framework operation failed with another status.
         ///
         /// - Parameters:
         ///   - status: The OS status code returned by the framework.
         ///   - message: A system-provided explanation, when available.
         case underlyingError(status: OSStatus, message: String?)
 
+        /// Creates the error that represents a Security-framework status.
+        ///
+        /// - Parameter status: A failing status returned by Keychain Services.
+        public init(status: OSStatus) {
+            switch status {
+                case errSecItemNotFound: self = .itemNotFound
+                case errSecDuplicateItem: self = .duplicateItem
+                case errSecInteractionNotAllowed: self = .interactionNotAllowed
+                case errSecMissingEntitlement: self = .missingEntitlement
+                case errSecAuthFailed: self = .authenticationFailed
+                case errSecUserCanceled: self = .userCanceled
+                default: self = .underlyingError(status: status, message: status.errorMessage)
+            }
+        }
+
+        /// The Security-framework status this error represents.
+        public var status: OSStatus {
+            switch self {
+                case .itemNotFound: errSecItemNotFound
+                case .duplicateItem: errSecDuplicateItem
+                case .interactionNotAllowed: errSecInteractionNotAllowed
+                case .missingEntitlement: errSecMissingEntitlement
+                case .authenticationFailed: errSecAuthFailed
+                case .userCanceled: errSecUserCanceled
+                case let .underlyingError(status, _): status
+            }
+        }
+
         /// A human-readable description containing the status code and available message.
         public var localizedDescription: String {
-            switch self {
-                case .encodingFailed:
-                    return "encoding failed"
-                case let .underlyingError(status, message):
-                    if let message {
-                        return "\(status) - \(message)"
-                    }
-                    return "\(status) - unknown error"
+            let message = switch self {
+                case let .underlyingError(_, message): message
+                default: status.errorMessage
             }
+            return "\(status) - \(message ?? "unknown error")"
         }
 
         /// Preserves the description when this value is handled as `any Error` or `NSError`.
