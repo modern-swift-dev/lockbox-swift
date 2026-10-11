@@ -4,7 +4,7 @@
         import LocalAuthentication
 
         /// Errors produced while authenticating or accessing biometric credentials.
-        public enum BiometricServiceError: Swift.Error {
+        public enum BiometricServiceError: LocalizedError {
 
             /// The device doesn't support biometric authentication.
             case unsupported
@@ -46,6 +46,32 @@
                 }
 
                 return .underlying(error)
+            }
+
+            /// A description of the error suitable for display.
+            public var errorDescription: String? {
+                switch self {
+                    case .unsupported:
+                        "This device doesn't support biometric authentication."
+                    case .unconfigured:
+                        "Biometric authentication isn't set up on this device."
+                    case .synchronizationUnsupported:
+                        "Biometric credentials can't sync through iCloud Keychain."
+                    case .failed:
+                        "Biometric authentication failed."
+                    case .userFallback:
+                        "The user chose another way to sign in."
+                    case .lockedOut:
+                        "Biometric authentication is locked after too many failed attempts."
+                    case .cancelled:
+                        "Biometric authentication was cancelled."
+                    case .unavailable:
+                        "Biometric authentication is temporarily unavailable."
+                    case .unknown:
+                        "Biometric authentication failed with an unknown error."
+                    case let .underlying(error):
+                        error.localizedDescription
+                }
             }
 
             /// A Boolean value that indicates whether biometric authentication is locked out.

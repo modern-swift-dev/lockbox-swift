@@ -130,6 +130,29 @@
                     }; return false })())
             }
 
+            @Test(arguments: [
+                BiometricServiceError.unsupported,
+                .unconfigured,
+                .synchronizationUnsupported,
+                .failed,
+                .userFallback,
+                .lockedOut,
+                .cancelled,
+                .unavailable,
+                .unknown
+            ])
+            func everyCaseHasADescription(error: BiometricServiceError) throws {
+                let description = try #require(error.errorDescription)
+                #expect(!description.isEmpty)
+                #expect((error as NSError).localizedDescription == description)
+            }
+
+            @Test func underlyingDescriptionComesFromWrappedError() {
+                let wrapped = NSError(domain: "Test", code: 1, userInfo: [NSLocalizedDescriptionKey: "Disk full"])
+                let error: any Error = BiometricServiceError.underlying(wrapped)
+                #expect(error.localizedDescription == "Disk full")
+            }
+
             @Test func userFallbackIsNotLockedOut() {
                 #expect(!BiometricServiceError.userFallback.isLockedOut)
             }
