@@ -165,9 +165,12 @@
                         case .success:
                             let credentials = Credentials(username: email, password: password)
                             let data = try JSONEncoder().encode(credentials)
-                            try keychain.set(data: data)
-                            if let state = localAuthenticationService.biometricState {
-                                try baseline.record(state)
+                            let (keychain, baseline, authentication) = (keychain, baseline, localAuthenticationService)
+                            try await Self.performOffMainActor {
+                                try keychain.set(data: data)
+                                if let state = authentication.biometricState {
+                                    try baseline.record(state)
+                                }
                             }
 
                         case .failed:
@@ -199,8 +202,9 @@
                 guard isProperlyConfigured else {
                     throw BiometricServiceError.unconfigured
                 }
+                let (keychain, baseline, authentication) = (keychain, baseline, localAuthenticationService)
                 // Don't ask the user to authenticate for credentials that aren't there.
-                guard hasCredentials else {
+                guard await Self.performOffMainActor({ keychain.exists() }) else {
                     throw BiometricServiceError.noCredentials
                 }
                 let result = await localAuthenticationService.evaluate(
@@ -211,12 +215,15 @@
                 do {
                     switch result {
                         case .success:
-                            guard let data = try keychain.getData() else {
+                            let (storedData, changed) = try await Self.performOffMainActor {
+                                try (keychain.getData(), Self.biometricStateChanged(authentication.biometricState, baseline: baseline))
+                            }
+                            guard let data = storedData else {
                                 throw BiometricServiceError.noCredentials
                             }
 
                             let credentials: Credentials = try JSONDecoder().decode(Credentials.self, from: data)
-                            if biometricStateChanged() {
+                            if changed {
                                 return .biometricChanged(username: credentials.username, password: credentials.password)
                             }
                             return .success(username: credentials.username, password: credentials.password)
@@ -255,11 +262,21 @@
                 )!
             }
 
+            /// Runs blocking keychain and file work away from the main actor.
+            ///
+            /// Keychain Services blocks the calling thread, which would hang the UI on the
+            /// main thread. A nonisolated async function runs on the global concurrent executor.
+            private nonisolated static func performOffMainActor<T: Sendable>(
+                _ work: @Sendable () throws -> T
+            ) async rethrows -> T {
+                try work()
+            }
+
             /// Compares the current biometric state with the state recorded at save time.
             ///
             /// An unreadable baseline counts as a change, so callers re-verify the user.
-            private func biometricStateChanged() -> Bool {
-                guard let state = localAuthenticationService.biometricState else {
+            private nonisolated static func biometricStateChanged(_ state: Data?, baseline: BiometricBaseline) -> Bool {
+                guard let state else {
                     return false
                 }
                 do {

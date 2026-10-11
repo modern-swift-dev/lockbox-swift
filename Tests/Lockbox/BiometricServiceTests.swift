@@ -189,6 +189,18 @@
                 #expect(baselineExists())
             }
 
+            @Test func keychainAccessRunsOffTheMainThread() async throws {
+                let authentication = MockLocalAuthenticationService(result: .success, biometricState: Data([1]))
+                let keychain = MockBiometricCredentialStore(authentication: authentication)
+                let service = makeService(authentication: authentication, keychain: keychain)
+
+                try await service.save(email: "user", password: "secret")
+                _ = try await service.retrieve()
+
+                #expect(keychain.operations.count == 2)
+                #expect(keychain.mainThreadAccessCount == 0)
+            }
+
             @Test func synchronizationIsRejectedBeforeAuthentication() async {
                 let authentication = MockLocalAuthenticationService(result: .success)
                 let service = makeService(synchronizable: true, authentication: authentication)
@@ -358,9 +370,21 @@
             private let lock = NSLock()
             private var data: Data?
             private var recordedOperations: [Operation] = []
+            private var mainThreadAccesses = 0
 
             var operations: [Operation] {
                 lock.withLock { recordedOperations }
+            }
+
+            /// How many store calls ran on the main thread.
+            var mainThreadAccessCount: Int {
+                lock.withLock { mainThreadAccesses }
+            }
+
+            private func noteThread() {
+                if Thread.isMainThread {
+                    mainThreadAccesses += 1
+                }
             }
 
             init(authentication: MockLocalAuthenticationService, failsWrites: Bool = false, existsOverride: Bool? = nil) {
@@ -370,11 +394,15 @@
             }
 
             func exists() -> Bool {
-                lock.withLock { existsOverride ?? (data != nil) }
+                lock.withLock {
+                    noteThread()
+                    return existsOverride ?? (data != nil)
+                }
             }
 
             func getData() throws -> Data? {
                 lock.withLock {
+                    noteThread()
                     recordedOperations.append(.read(afterEvaluations: authentication.evaluationCount))
                     return data
                 }
@@ -382,6 +410,7 @@
 
             func set(data: Data) throws {
                 try lock.withLock {
+                    noteThread()
                     recordedOperations.append(.write(afterEvaluations: authentication.evaluationCount))
                     if failsWrites {
                         throw StorageError.writeFailed
