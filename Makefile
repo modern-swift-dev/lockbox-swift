@@ -12,15 +12,12 @@ EXAMPLE_DESTINATION ?= generic/platform=iOS Simulator
 
 
 .PHONY: setup lint format documentation \
-	test test-swift test-examples test-linux test-macos \
-	test-ios test-tvos test-watchos test-visionos test-apple test-all
+	test test-examples test-macos \
+	test-ios test-tvos test-watchos test-visionos
 
 setup:
 
 	brew bundle install
-	brew upgrade
-	brew cleanup
-	brew autoremove
 	mint bootstrap
 	lefthook install
 
