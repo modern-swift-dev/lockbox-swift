@@ -51,10 +51,17 @@
 
         /// Deletes the keychain item matching ``criteria``.
         ///
+        /// Removing an item that doesn't exist succeeds, matching ``getData()``, which
+        /// returns `nil` in that case.
+        ///
         /// - Throws: ``KeychainError`` when the Security framework cannot delete the
-        ///   matching item, including when no matching item exists.
+        ///   matching item.
         public func remove() throws(KeychainError) {
-            try criteria.delete()
+            do throws(KeychainError) {
+                try criteria.delete()
+            } catch .itemNotFound {
+                return
+            }
         }
 
         func retrieve() throws(KeychainError) -> KeychainRecord? {

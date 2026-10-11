@@ -160,6 +160,28 @@
                 #expect(try first.getString() == "second")
             }
 
+            @Test func removeMissingItemSucceeds() throws {
+                try skipIfNoKeychainAccess()
+                let account = "missing_\(UUID().uuidString)"
+                let password = KeychainPassword.generic(service: testService, account: account)
+
+                try password.remove()
+                try password.set(string: "value")
+                try password.remove()
+                try password.remove()
+
+                #expect(try password.getString() == nil)
+            }
+
+            @Test func criteriaDeleteOfMissingItemStillThrowsItemNotFound() throws {
+                try skipIfNoKeychainAccess()
+                let password = KeychainPassword.generic(service: testService, account: "missing_\(UUID().uuidString)")
+
+                #expect(throws: KeychainError.itemNotFound) {
+                    try password.criteria.delete()
+                }
+            }
+
             @Test func getStringReturnsNilWhenNotExists() throws {
                 try skipIfNoKeychainAccess()
                 let account = "nonexistent_\(UUID().uuidString)"
