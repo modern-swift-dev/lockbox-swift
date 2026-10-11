@@ -9,8 +9,11 @@
             /// The device doesn't support biometric authentication.
             case unsupported
 
-            /// Biometric authentication isn't configured on the device, or credentials are absent.
+            /// Biometric authentication isn't configured on the device.
             case unconfigured
+
+            /// No credentials are stored.
+            case noCredentials
 
             /// Device-only biometric credentials cannot synchronize through iCloud Keychain.
             case synchronizationUnsupported
@@ -55,6 +58,8 @@
                         "This device doesn't support biometric authentication."
                     case .unconfigured:
                         "Biometric authentication isn't set up on this device."
+                    case .noCredentials:
+                        "No saved credentials were found."
                     case .synchronizationUnsupported:
                         "Biometric credentials can't sync through iCloud Keychain."
                     case .failed:

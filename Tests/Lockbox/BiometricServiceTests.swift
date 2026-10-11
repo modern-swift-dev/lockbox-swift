@@ -82,15 +82,32 @@
                 }
             }
 
-            @Test func missingCredentialsThrowsUnconfiguredAfterAuthenticationEvaluation() async {
+            @Test func missingCredentialsThrowNoCredentialsBeforeAuthentication() async {
                 let authentication = MockLocalAuthenticationService(result: .success)
                 let keychain = MockBiometricCredentialStore(authentication: authentication)
+                let service = makeService(authentication: authentication, keychain: keychain)
+
+                #expect(!service.hasCredentials)
+                do {
+                    _ = try await service.retrieve()
+                    Issue.record("Expected missing credentials")
+                } catch BiometricServiceError.noCredentials {
+                    #expect(authentication.evaluationCount == 0)
+                    #expect(keychain.operations.isEmpty)
+                } catch {
+                    Issue.record("Unexpected error: \(error)")
+                }
+            }
+
+            @Test func credentialsRemovedDuringAuthenticationThrowNoCredentials() async {
+                let authentication = MockLocalAuthenticationService(result: .success)
+                let keychain = MockBiometricCredentialStore(authentication: authentication, existsOverride: true)
                 let service = makeService(authentication: authentication, keychain: keychain)
 
                 do {
                     _ = try await service.retrieve()
                     Issue.record("Expected missing credentials")
-                } catch BiometricServiceError.unconfigured {
+                } catch BiometricServiceError.noCredentials {
                     #expect(authentication.evaluationCount == 1)
                     #expect(keychain.operations == [.read(afterEvaluations: 1)])
                 } catch {
@@ -98,21 +115,46 @@
                 }
             }
 
+            @Test func hasCredentialsReflectsStore() async throws {
+                let authentication = MockLocalAuthenticationService(result: .success)
+                let keychain = MockBiometricCredentialStore(authentication: authentication)
+                let service = makeService(authentication: authentication, keychain: keychain)
+
+                #expect(!service.hasCredentials)
+                try await service.save(email: "user", password: "secret")
+                #expect(service.hasCredentials)
+                service.forget()
+                #expect(!service.hasCredentials)
+            }
+
             @Test func existenceQueryCannotRequestSecretsOrPresentAuthentication() throws {
                 let authentication = MockLocalAuthenticationService(result: .success)
-                let service = makeService(authentication: authentication)
-                #expect(authentication.evaluationCount == 0)
-                let query = service.credentialExistenceQuery
+                let store = KeychainBiometricCredentialStore(
+                    password: .generic(service: "BiometricServiceTests", account: "credentials"),
+                    service: "BiometricServiceTests",
+                    account: "credentials",
+                    accessGroup: "group.example",
+                    synchronizable: false
+                )
+                let query = store.existenceQuery
                 #expect(query[kSecReturnData as String] == nil)
                 #expect(query[kSecReturnAttributes as String] as? Bool == true)
+                #expect(query[kSecAttrAccessGroup as String] as? String == "group.example")
                 let context = try #require(query[kSecUseAuthenticationContext as String] as? LAContext)
                 #expect(context.interactionNotAllowed)
                 #expect(context !== authentication.context)
             }
 
-            @Test func cancellationIsPreservedEvenWithoutCredentials() async {
+            @Test func itemsThatNeedInteractionStillExist() {
+                #expect(KeychainBiometricCredentialStore.indicatesStoredItem(errSecSuccess))
+                #expect(KeychainBiometricCredentialStore.indicatesStoredItem(errSecInteractionNotAllowed))
+                #expect(!KeychainBiometricCredentialStore.indicatesStoredItem(errSecItemNotFound))
+                #expect(!KeychainBiometricCredentialStore.indicatesStoredItem(errSecMissingEntitlement))
+            }
+
+            @Test func cancellationIsReportedWithoutReadingCredentials() async {
                 let authentication = MockLocalAuthenticationService(result: .underlying(LAError(.userCancel)))
-                let keychain = MockBiometricCredentialStore(authentication: authentication)
+                let keychain = MockBiometricCredentialStore(authentication: authentication, existsOverride: true)
                 let service = makeService(authentication: authentication, keychain: keychain)
                 do {
                     _ = try await service.retrieve()
@@ -312,6 +354,7 @@
 
             private let authentication: MockLocalAuthenticationService
             private let failsWrites: Bool
+            private let existsOverride: Bool?
             private let lock = NSLock()
             private var data: Data?
             private var recordedOperations: [Operation] = []
@@ -320,9 +363,14 @@
                 lock.withLock { recordedOperations }
             }
 
-            init(authentication: MockLocalAuthenticationService, failsWrites: Bool = false) {
+            init(authentication: MockLocalAuthenticationService, failsWrites: Bool = false, existsOverride: Bool? = nil) {
                 self.authentication = authentication
                 self.failsWrites = failsWrites
+                self.existsOverride = existsOverride
+            }
+
+            func exists() -> Bool {
+                lock.withLock { existsOverride ?? (data != nil) }
             }
 
             func getData() throws -> Data? {

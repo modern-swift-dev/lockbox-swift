@@ -133,6 +133,7 @@
             @Test(arguments: [
                 BiometricServiceError.unsupported,
                 .unconfigured,
+                .noCredentials,
                 .synchronizationUnsupported,
                 .failed,
                 .userFallback,

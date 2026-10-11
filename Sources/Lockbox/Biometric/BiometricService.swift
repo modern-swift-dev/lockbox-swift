@@ -67,29 +67,10 @@
 
             /// A Boolean value that indicates whether the configured keychain item exists.
             ///
-            /// This property does not authenticate or decode the stored credentials. Keychain
-            /// access errors are treated as an absence of credentials.
+            /// This property does not authenticate or decode the stored credentials. Other
+            /// keychain errors are treated as an absence of credentials.
             public var hasCredentials: Bool {
-                SecItemCopyMatching(credentialExistenceQuery as CFDictionary, nil) == errSecSuccess
-            }
-
-            /// Attribute-only queries use a separate context so cached prompt settings cannot enable UI.
-            var credentialExistenceQuery: [String: Any] {
-                let context = LAContext()
-                context.interactionNotAllowed = true
-                var query: [String: Any] = [
-                    kSecClass as String: kSecClassGenericPassword,
-                    kSecAttrService as String: service,
-                    kSecAttrAccount as String: account,
-                    kSecAttrSynchronizable as String: synchronizable,
-                    kSecReturnAttributes as String: true,
-                    kSecMatchLimit as String: kSecMatchLimitOne,
-                    kSecUseAuthenticationContext as String: context
-                ]
-                if let accessGroup {
-                    query[kSecAttrAccessGroup as String] = accessGroup
-                }
-                return query
+                keychain.exists()
             }
 
             /// Creates a biometric credential service for a generic-password keychain item.
@@ -135,13 +116,19 @@
                 self.localAuthenticationService = localAuthenticationService
                 baseline = .forItem(service: service, account: account, accessGroup: accessGroup, in: baselineDirectory)
 
-                keychain = keychainOverride ?? KeychainPassword.generic(
+                keychain = keychainOverride ?? KeychainBiometricCredentialStore(
+                    password: .generic(
+                        service: service,
+                        account: account,
+                        accessGroup: accessGroup,
+                        synchronizable: synchronizable,
+                        accessControl: Self.makeAccessControl(),
+                        contextProvider: { localAuthenticationService.context }
+                    ),
                     service: service,
                     account: account,
                     accessGroup: accessGroup,
-                    synchronizable: synchronizable,
-                    accessControl: Self.makeAccessControl(),
-                    contextProvider: { localAuthenticationService.context }
+                    synchronizable: synchronizable
                 )
             }
 
@@ -201,7 +188,8 @@
             ///
             /// - Returns: The decoded username and password in a ``BiometricServiceResult``.
             /// - Throws: ``BiometricServiceError`` when biometrics are unsupported or not
-            ///   configured, credentials are absent, authentication fails or is locked out,
+            ///   configured, no credentials are stored (checked before prompting, as
+            ///   ``BiometricServiceError/noCredentials``), authentication fails or is locked out,
             ///   or stored data cannot be read or decoded. A lockout leaves stored credentials
             ///   in place; call ``forget()`` if your app should discard them.
             public func retrieve() async throws -> BiometricServiceResult {
@@ -210,6 +198,10 @@
                 }
                 guard isProperlyConfigured else {
                     throw BiometricServiceError.unconfigured
+                }
+                // Don't ask the user to authenticate for credentials that aren't there.
+                guard hasCredentials else {
+                    throw BiometricServiceError.noCredentials
                 }
                 let result = await localAuthenticationService.evaluate(
                     access: Self.makeAccessControl(),
@@ -220,7 +212,7 @@
                     switch result {
                         case .success:
                             guard let data = try keychain.getData() else {
-                                throw BiometricServiceError.unconfigured
+                                throw BiometricServiceError.noCredentials
                             }
 
                             let credentials: Credentials = try JSONDecoder().decode(Credentials.self, from: data)
