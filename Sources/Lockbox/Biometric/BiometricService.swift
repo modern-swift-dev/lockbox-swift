@@ -15,7 +15,7 @@
         ///     service: "com.myapp",
         ///     localAuthenticationService: LocalAuthenticationService(reason: "Unlock credentials")
         /// )
-        /// try await service.save(email: "user@example.com", password: "secret")
+        /// try await service.save(username: "user@example.com", password: "secret")
         /// let result = try await service.retrieve()
         /// ```
         public final class BiometricService: BiometricServiceProtocol, Sendable {
@@ -137,14 +137,14 @@
             /// Existing data for the configured service and account is replaced.
             ///
             /// - Parameters:
-            ///   - email: The username or email address to store.
+            ///   - username: The username or email address to store.
             ///   - password: The password to store.
             /// - Throws: ``BiometricServiceError`` when biometrics are unsupported, not
             ///   configured, rejected, locked out, or unavailable, or synchronization is requested.
             ///   A lockout leaves stored credentials in place; the system clears it after the
             ///   user enters the device passcode.
             ///   Encoding, keychain, and biometric-baseline storage errors are wrapped in ``BiometricServiceError/underlying(_:)``.
-            public func save(email: String, password: String) async throws {
+            public func save(username: String, password: String) async throws {
                 guard !synchronizable else {
                     throw BiometricServiceError.synchronizationUnsupported
                 }
@@ -163,7 +163,7 @@
                 do {
                     switch result {
                         case .success:
-                            let credentials = Credentials(username: email, password: password)
+                            let credentials = Credentials(username: username, password: password)
                             let data = try JSONEncoder().encode(credentials)
                             let (keychain, baseline, authentication) = (keychain, baseline, localAuthenticationService)
                             try await Self.performOffMainActor {

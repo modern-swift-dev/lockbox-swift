@@ -60,7 +60,7 @@
                 let service = makeService(authentication: localAuthentication)
 
                 await #expect(throws: BiometricServiceError.self) {
-                    try await service.save(email: "user@example.com", password: "secret")
+                    try await service.save(username: "user@example.com", password: "secret")
                 }
                 await #expect(throws: BiometricServiceError.self) {
                     _ = try await service.retrieve()
@@ -75,7 +75,7 @@
                 let service = makeService(authentication: localAuthentication)
 
                 await #expect(throws: BiometricServiceError.self) {
-                    try await service.save(email: "user@example.com", password: "secret")
+                    try await service.save(username: "user@example.com", password: "secret")
                 }
                 await #expect(throws: BiometricServiceError.self) {
                     _ = try await service.retrieve()
@@ -121,7 +121,7 @@
                 let service = makeService(authentication: authentication, keychain: keychain)
 
                 #expect(!service.hasCredentials)
-                try await service.save(email: "user", password: "secret")
+                try await service.save(username: "user", password: "secret")
                 #expect(service.hasCredentials)
                 service.forget()
                 #expect(!service.hasCredentials)
@@ -171,7 +171,7 @@
                 let setup = MockLocalAuthenticationService(result: .success, biometricState: Data([1]))
                 let keychain = MockBiometricCredentialStore(authentication: setup)
                 try await makeService(authentication: setup, keychain: keychain)
-                    .save(email: "user", password: "secret")
+                    .save(username: "user", password: "secret")
 
                 let lockedOut = MockLocalAuthenticationService(result: .underlying(LAError(.biometryLockout)))
                 let service = makeService(authentication: lockedOut, keychain: keychain)
@@ -180,7 +180,7 @@
                     _ = try await service.retrieve()
                 }
                 let saveError = await #expect(throws: BiometricServiceError.self) {
-                    try await service.save(email: "user", password: "new")
+                    try await service.save(username: "user", password: "new")
                 }
                 #expect(retrieveError?.isLockedOut == true)
                 #expect(saveError?.isLockedOut == true)
@@ -189,12 +189,24 @@
                 #expect(baselineExists())
             }
 
+            @Test func saveTakesTheUsernameReturnedByRetrieve() async throws {
+                let authentication = MockLocalAuthenticationService(result: .success)
+                let service: any BiometricServiceProtocol = makeService(
+                    authentication: authentication,
+                    keychain: MockBiometricCredentialStore(authentication: authentication)
+                )
+
+                try await service.save(username: "person@example.com", password: "secret")
+
+                #expect(try await service.retrieve() == .success(username: "person@example.com", password: "secret"))
+            }
+
             @Test func keychainAccessRunsOffTheMainThread() async throws {
                 let authentication = MockLocalAuthenticationService(result: .success, biometricState: Data([1]))
                 let keychain = MockBiometricCredentialStore(authentication: authentication)
                 let service = makeService(authentication: authentication, keychain: keychain)
 
-                try await service.save(email: "user", password: "secret")
+                try await service.save(username: "user", password: "secret")
                 _ = try await service.retrieve()
 
                 #expect(keychain.operations.count == 2)
@@ -205,7 +217,7 @@
                 let authentication = MockLocalAuthenticationService(result: .success)
                 let service = makeService(synchronizable: true, authentication: authentication)
                 do {
-                    try await service.save(email: "user", password: "secret")
+                    try await service.save(username: "user", password: "secret")
                     Issue.record("Expected unsupported synchronization")
                 } catch BiometricServiceError.synchronizationUnsupported {
                     #expect(authentication.evaluationCount == 0)
@@ -220,7 +232,7 @@
                 let keychain = MockBiometricCredentialStore(authentication: authentication)
 
                 try await makeService(authentication: authentication, keychain: keychain)
-                    .save(email: "user", password: "secret")
+                    .save(username: "user", password: "secret")
 
                 #expect(try Data(contentsOf: baseline().fileURL) == Data([1]))
                 #expect(keychain.operations == [.write(afterEvaluations: 1)])
@@ -230,7 +242,7 @@
                 let authentication = MockLocalAuthenticationService(result: .success, biometricState: Data([1]))
                 let keychain = MockBiometricCredentialStore(authentication: authentication)
                 let service = makeService(authentication: authentication, keychain: keychain)
-                try await service.save(email: "user", password: "secret")
+                try await service.save(username: "user", password: "secret")
 
                 if changed {
                     authentication.biometricState = Data([2])
@@ -253,14 +265,14 @@
                     authentication: first,
                     keychain: MockBiometricCredentialStore(authentication: first)
                 )
-                try await firstService.save(email: "first", password: "secret")
+                try await firstService.save(username: "first", password: "secret")
 
                 let second = MockLocalAuthenticationService(result: .success, biometricState: Data([2]))
                 try await makeService(
                     account: "second",
                     authentication: second,
                     keychain: MockBiometricCredentialStore(authentication: second)
-                ).save(email: "second", password: "secret")
+                ).save(username: "second", password: "secret")
 
                 #expect(baseline(account: "first").fileURL != baseline(account: "second").fileURL)
                 #expect(try await firstService.retrieve() == .success(username: "first", password: "secret"))
@@ -271,7 +283,7 @@
                 try await makeService(
                     authentication: authentication,
                     keychain: MockBiometricCredentialStore(authentication: authentication)
-                ).save(email: "user", password: "secret")
+                ).save(username: "user", password: "secret")
 
                 let values = try baseline().fileURL.resourceValues(forKeys: [.isExcludedFromBackupKey])
                 #expect(values.isExcludedFromBackup == true)
@@ -281,7 +293,7 @@
                 let authentication = MockLocalAuthenticationService(result: .success, biometricState: Data([1]))
                 let keychain = MockBiometricCredentialStore(authentication: authentication)
                 let service = makeService(authentication: authentication, keychain: keychain)
-                try await service.save(email: "user", password: "secret")
+                try await service.save(username: "user", password: "secret")
                 #expect(baselineExists())
 
                 service.forget()
@@ -296,7 +308,7 @@
                 let keychain = MockBiometricCredentialStore(authentication: authentication, failsWrites: true)
                 let service = makeService(authentication: authentication, keychain: keychain)
                 await #expect(throws: BiometricServiceError.self) {
-                    try await service.save(email: "user", password: "secret")
+                    try await service.save(username: "user", password: "secret")
                 }
                 #expect(authentication.evaluationCount == 1)
                 #expect(!baselineExists())
@@ -308,7 +320,7 @@
                 let keychain = MockBiometricCredentialStore(authentication: authentication)
                 let service = makeService(authentication: authentication, keychain: keychain)
                 await #expect(throws: BiometricServiceError.self) {
-                    try await service.save(email: "user", password: "secret")
+                    try await service.save(username: "user", password: "secret")
                 }
                 #expect(!baselineExists())
                 #expect(keychain.operations.isEmpty)

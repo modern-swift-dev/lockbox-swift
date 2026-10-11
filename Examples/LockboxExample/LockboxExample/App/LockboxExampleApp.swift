@@ -214,7 +214,7 @@ private final class ExampleViewModel: ObservableObject {
 
     func saveBiometricCredentials() async {
         do {
-            try await makeBiometricService().save(email: biometricEmail, password: biometricPassword)
+            try await makeBiometricService().save(username: biometricEmail, password: biometricPassword)
             reportSuccess("Biometric credentials saved.")
         } catch {
             report(error, action: "saving biometric credentials")

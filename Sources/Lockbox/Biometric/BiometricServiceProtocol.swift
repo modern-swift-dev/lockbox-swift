@@ -23,10 +23,10 @@
             /// Authenticates the user and stores credentials protected by biometrics.
             ///
             /// - Parameters:
-            ///   - email: The username or email address to store.
+            ///   - username: The username or email address to store.
             ///   - password: The password to store.
             /// - Throws: An error if biometric authentication or keychain storage fails.
-            func save(email: String, password: String) async throws
+            func save(username: String, password: String) async throws
 
             /// Authenticates the user and retrieves the protected credentials.
             ///

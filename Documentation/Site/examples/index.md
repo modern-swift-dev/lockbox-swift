@@ -109,7 +109,7 @@ let credentials = BiometricService(
 )
 
 try await credentials.save(
-    email: "person@example.com",
+    username: "person@example.com",
     password: "a-secret"
 )
 
