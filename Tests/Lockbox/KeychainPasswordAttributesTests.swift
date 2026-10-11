@@ -113,6 +113,27 @@
             #expect(query[kSecAttrService as String] as? String == "com.example.explicit")
         }
 
+        @Test func dataProtectionKeychainIsOptIn() throws {
+            let url = try #require(URL(string: "https://example.com"))
+            let defaults = [
+                KeychainPassword.generic(service: "com.example.dp", account: "user"),
+                KeychainPassword.internet(url: url, service: "com.example.dp", account: "user")
+            ]
+            let optedIn = [
+                KeychainPassword.generic(service: "com.example.dp", account: "user", useDataProtectionKeychain: true),
+                KeychainPassword.internet(url: url, service: "com.example.dp", account: "user", useDataProtectionKeychain: true)
+            ]
+
+            for password in defaults {
+                let query = try #require(password.criteria.query as? [String: AnyObject])
+                #expect(query[kSecUseDataProtectionKeychain as String] == nil)
+            }
+            for password in optedIn {
+                let query = try #require(password.criteria.query as? [String: AnyObject])
+                #expect(query[kSecUseDataProtectionKeychain as String] as? Bool == true)
+            }
+        }
+
         @Test func handleWithoutAttributesCreatesWithCriteriaOnly() {
             let password = KeychainPassword.generic(service: "com.example.attributes", account: "user")
 

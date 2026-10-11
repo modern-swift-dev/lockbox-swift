@@ -61,6 +61,14 @@
             #endif
         #endif
 
+        /// Uses the data protection keychain on macOS (`kSecUseDataProtectionKeychain`).
+        ///
+        /// Without this criterion, macOS uses the file-based login keychain, which
+        /// ignores accessibility and access control. The data protection keychain
+        /// requires a signed app with a keychain access group. Other platforms always
+        /// use it.
+        case useDataProtectionKeychain
+
         /// Matches an access group (`kSecAttrAccessGroup`).
         ///
         /// The app must have the entitlement for the supplied group.
@@ -91,7 +99,7 @@
         /// - The host is copied when present.
         /// - An empty path is stored as `/`.
         ///
-        /// ``KeychainPassword/internet(url:authenticationType:service:account:accessGroup:synchronizable:accessibility:accessControl:label:comment:description:contextProvider:)``
+        /// ``KeychainPassword/internet(url:authenticationType:service:account:accessGroup:synchronizable:useDataProtectionKeychain:accessibility:accessControl:label:comment:description:contextProvider:)``
         /// uses the same mapping.
         case url(URL, AuthenticationType = .htmlForm)
 
@@ -140,6 +148,7 @@
         ///   - service: The service attribute to match.
         ///   - accessGroup: An optional entitled access group to match.
         ///   - accessibility: An optional accessibility policy to match.
+        ///   - useDataProtectionKeychain: Whether macOS searches the data protection keychain.
         /// - Returns: Attribute-only records for all matching items.
         /// - Throws: ``KeychainError/underlyingError(status:message:)`` when the
         ///   Security framework cannot perform the query.
@@ -147,14 +156,18 @@
             type: KeychainCriterion.SecurityClass = .genericPassword,
             service: String,
             accessGroup: String?,
-            accessibility: Accessibility? = nil
+            accessibility: Accessibility? = nil,
+            useDataProtectionKeychain: Bool = false
         ) throws -> [KeychainRecord] {
-            let criteria = findAllCriteria(
+            var criteria = findAllCriteria(
                 type: type,
                 service: service,
                 accessGroup: accessGroup,
                 accessibility: accessibility
             )
+            if useDataProtectionKeychain {
+                criteria.append(.useDataProtectionKeychain)
+            }
 
             // Fetch matching items from the keychain.
             var queryResult: AnyObject?
@@ -181,7 +194,7 @@
     }
 
     extension KeychainCriterion {
-        /// The query used by ``findAll(type:service:accessGroup:accessibility:)``.
+        /// The query used by ``findAll(type:service:accessGroup:accessibility:useDataProtectionKeychain:)``.
         static func findAllCriteria(
             type: SecurityClass,
             service: String,
@@ -404,6 +417,8 @@
                     query[kSecAttrSynchronizable as String] = kSecAttrSynchronizableAny
                 case let .account(value):
                     query[kSecAttrAccount as String] = value as AnyObject?
+                case .useDataProtectionKeychain:
+                    query[kSecUseDataProtectionKeychain as String] = kCFBooleanTrue
                 case let .accessGroup(value):
                     query[kSecAttrAccessGroup as String] = value as AnyObject?
                 case .limitOne:

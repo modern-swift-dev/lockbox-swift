@@ -39,7 +39,12 @@
                 ])
             ]
 
-            let handles = KeychainPassword.genericPasswords(from: records, service: "com.example.findall", accessGroup: nil)
+            let handles = KeychainPassword.genericPasswords(
+                from: records,
+                service: "com.example.findall",
+                accessGroup: nil,
+                useDataProtectionKeychain: false
+            )
             let queries = try handles.map { try #require($0.criteria.query as? [String: AnyObject]) }
 
             #expect(queries.count == 2)
@@ -47,6 +52,21 @@
             #expect(queries[0][kSecAttrSynchronizable as String] as? Bool == true)
             #expect(queries[1][kSecAttrAccount as String] as? String == "local")
             #expect(queries[1][kSecAttrSynchronizable as String] as? Bool == false)
+        }
+
+        @Test func foundHandlesKeepDataProtectionKeychainChoice() throws {
+            let records = [KeychainRecord([kSecAttrAccount as String: "user" as AnyObject])]
+            let handles = KeychainPassword.genericPasswords(
+                from: records,
+                service: "com.example.findall",
+                accessGroup: nil,
+                useDataProtectionKeychain: true
+            ) + KeychainPassword.internetPasswords(from: records, useDataProtectionKeychain: true)
+
+            for handle in handles {
+                let query = try #require(handle.criteria.query as? [String: AnyObject])
+                #expect(query[kSecUseDataProtectionKeychain as String] as? Bool == true)
+            }
         }
     }
 #endif

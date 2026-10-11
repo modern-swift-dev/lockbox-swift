@@ -21,6 +21,9 @@
             ///     have the corresponding entitlement.
             ///   - synchronizable: Whether the item participates in iCloud Keychain syncing.
             ///     Pass `nil` to omit this attribute from the query.
+            ///   - useDataProtectionKeychain: Whether macOS stores the item in the data protection
+            ///     keychain, which behaves like the iOS keychain. Requires a signed app with a
+            ///     keychain access group. Other platforms always use it.
             ///   - accessibility: When the item's data is available. Applied when the item is
             ///     written. Pass `nil` to use the Security framework's default.
             ///   - accessControl: Optional Security access-control policy, such as one requiring
@@ -36,6 +39,7 @@
                 account: String,
                 accessGroup: String? = nil,
                 synchronizable: Bool? = nil,
+                useDataProtectionKeychain: Bool = false,
                 accessibility: KeychainCriterion.Accessibility? = nil,
                 accessControl: SecAccessControl? = nil,
                 label: String? = nil,
@@ -55,7 +59,10 @@
                         comment: comment,
                         description: description
                     ),
-                    authenticationCriterion: contextProvider.map(KeychainCriterion.localAuthenticationContextProvider)
+                    options: options(
+                        useDataProtectionKeychain: useDataProtectionKeychain,
+                        contextProvider: contextProvider.map(KeychainCriterion.localAuthenticationContextProvider)
+                    )
                 )
             }
         #else
@@ -73,6 +80,9 @@
             ///     have the corresponding entitlement.
             ///   - synchronizable: Whether the item participates in iCloud Keychain syncing.
             ///     Pass `nil` to omit this attribute from the query.
+            ///   - useDataProtectionKeychain: Whether macOS stores the item in the data protection
+            ///     keychain, which behaves like the iOS keychain. Requires a signed app with a
+            ///     keychain access group. Other platforms always use it.
             ///   - accessibility: When the item's data is available. Applied when the item is
             ///     written. Pass `nil` to use the Security framework's default.
             ///   - accessControl: Optional Security access-control policy, such as one requiring
@@ -86,6 +96,7 @@
                 account: String,
                 accessGroup: String? = nil,
                 synchronizable: Bool? = nil,
+                useDataProtectionKeychain: Bool = false,
                 accessibility: KeychainCriterion.Accessibility? = nil,
                 accessControl: SecAccessControl? = nil,
                 label: String? = nil,
@@ -104,7 +115,7 @@
                         comment: comment,
                         description: description
                     ),
-                    authenticationCriterion: nil
+                    options: options(useDataProtectionKeychain: useDataProtectionKeychain, contextProvider: nil)
                 )
             }
         #endif
@@ -118,19 +129,28 @@
         /// - Parameters:
         ///   - service: The service namespace whose generic-password items to find.
         ///   - accessGroup: An optional shared keychain access group used to limit the search.
+        ///   - useDataProtectionKeychain: Whether macOS searches the data protection keychain.
+        ///     The returned handles use the same keychain.
         /// - Returns: Handles for every matching generic-password item. Returns an empty
         ///   array when no items match.
         /// - Throws: ``KeychainError`` when the Security framework cannot search the keychain.
         static func allGenericPassword(
             service: String,
-            accessGroup: String? = nil
+            accessGroup: String? = nil,
+            useDataProtectionKeychain: Bool = false
         ) throws -> [KeychainPassword] {
             let records = try KeychainCriterion.findAll(
                 type: .genericPassword,
                 service: service,
-                accessGroup: accessGroup
+                accessGroup: accessGroup,
+                useDataProtectionKeychain: useDataProtectionKeychain
             )
-            return genericPasswords(from: records, service: service, accessGroup: accessGroup)
+            return genericPasswords(
+                from: records,
+                service: service,
+                accessGroup: accessGroup,
+                useDataProtectionKeychain: useDataProtectionKeychain
+            )
         }
     }
 
@@ -139,7 +159,8 @@
         static func genericPasswords(
             from records: [KeychainRecord],
             service: String,
-            accessGroup: String?
+            accessGroup: String?,
+            useDataProtectionKeychain: Bool
         ) -> [KeychainPassword] {
             records.map {
                 makeGeneric(
@@ -148,7 +169,7 @@
                     accessGroup: accessGroup,
                     synchronizable: $0.synchronizable,
                     attributes: [],
-                    authenticationCriterion: nil
+                    options: options(useDataProtectionKeychain: useDataProtectionKeychain, contextProvider: nil)
                 )
             }
         }
@@ -159,7 +180,7 @@
             accessGroup: String?,
             synchronizable: Bool?,
             attributes: [KeychainCriterion],
-            authenticationCriterion: KeychainCriterion?
+            options: [KeychainCriterion]
         ) -> KeychainPassword {
 
             var criteria: [KeychainCriterion] = [
@@ -173,9 +194,7 @@
                 criteria.append(.accessGroup(accessGroup))
             }
 
-            if let authenticationCriterion {
-                criteria.append(authenticationCriterion)
-            }
+            criteria.append(contentsOf: options)
 
             return .init(criteria: criteria, attributes: attributes)
         }

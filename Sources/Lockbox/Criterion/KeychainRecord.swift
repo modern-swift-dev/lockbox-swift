@@ -4,7 +4,7 @@
     /// A value representation of attributes returned by a Keychain query.
     ///
     /// Construct records from the dictionary returned by the Security framework, or
-    /// receive them from ``KeychainCriterion/findAll(type:service:accessGroup:accessibility:)``
+    /// receive them from ``KeychainCriterion/findAll(type:service:accessGroup:accessibility:useDataProtectionKeychain:)``
     /// and `retrieve()`. Missing string attributes are represented as empty
     /// strings; optional values were absent from the result.
     public struct KeychainRecord {

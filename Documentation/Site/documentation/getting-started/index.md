@@ -63,6 +63,10 @@ let updatedValue = try password.getString()
 try password.remove()
 ```
 
+### macOS keychains
+
+On macOS, Lockbox uses the file-based login keychain unless you pass `useDataProtectionKeychain: true`. The data protection keychain behaves like the iOS keychain and honors accessibility and access control, but it requires a signed app with a keychain access group. Moving an existing app to it doesn't migrate items already stored in the login keychain.
+
 ### Save and update one keychain record
 
 The service and account identify the record. A later save replaces its secret.
