@@ -103,7 +103,7 @@
         /// - The host is copied when present.
         /// - An empty path is stored as `/`.
         ///
-        /// ``KeychainPassword/internet(url:authenticationType:service:account:accessGroup:synchronizable:useDataProtectionKeychain:accessibility:accessControl:label:comment:description:contextProvider:)``
+        /// ``KeychainPassword/internet(url:authenticationType:securityDomain:account:accessGroup:synchronizable:useDataProtectionKeychain:accessibility:accessControl:label:comment:description:contextProvider:)``
         /// uses the same mapping.
         case url(URL, AuthenticationType = .htmlForm)
 
@@ -149,7 +149,8 @@
         ///
         /// - Parameters:
         ///   - type: The Security item class to search. Defaults to generic passwords.
-        ///   - service: The service attribute to match.
+        ///   - service: The service attribute to match, or `nil` to match any. Only
+        ///     generic passwords have a service; pass `nil` for other item classes.
         ///   - accessGroup: An optional entitled access group to match.
         ///   - accessibility: An optional accessibility policy to match.
         ///   - useDataProtectionKeychain: Whether macOS searches the data protection keychain.
@@ -158,7 +159,7 @@
         ///   Security framework cannot perform the query.
         static func findAll(
             type: KeychainCriterion.SecurityClass = .genericPassword,
-            service: String,
+            service: String?,
             accessGroup: String? = nil,
             accessibility: Accessibility? = nil,
             useDataProtectionKeychain: Bool = false
@@ -173,6 +174,13 @@
                 criteria.append(.useDataProtectionKeychain)
             }
 
+            return try records(matching: criteria)
+        }
+    }
+
+    extension KeychainCriterion {
+        /// Returns attribute records for every item matching a find-all query.
+        static func records(matching criteria: [KeychainCriterion]) throws(KeychainError) -> [KeychainRecord] {
             // Fetch matching items from the keychain.
             var queryResult: AnyObject?
             let status = withUnsafeMutablePointer(to: &queryResult) {
@@ -195,24 +203,25 @@
             // All account for this service / access group
             return resultData.compactMap { KeychainRecord($0) }
         }
-    }
 
-    extension KeychainCriterion {
         /// The query used by ``findAll(type:service:accessGroup:accessibility:useDataProtectionKeychain:)``.
         static func findAllCriteria(
             type: SecurityClass,
-            service: String,
+            service: String?,
             accessGroup: String?,
             accessibility: Accessibility?
         ) -> [KeychainCriterion] {
             var criteria: [KeychainCriterion] = [
                 .securityClass(type),
-                .service(service),
                 .synchronizableAny,
                 .limitAll,
                 .returnAttributes(true),
                 .returnData(false)
             ]
+
+            if let service {
+                criteria.append(.service(service))
+            }
 
             if let accessibility {
                 criteria.append(.accessible(accessibility))

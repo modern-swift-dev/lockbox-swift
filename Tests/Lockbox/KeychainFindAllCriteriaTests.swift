@@ -27,6 +27,36 @@
             #expect(query[kSecReturnData as String] as? Bool == false)
         }
 
+        @Test func findAllWithoutServiceOmitsServiceAttribute() throws {
+            let criteria = KeychainCriterion.findAllCriteria(
+                type: .internetPassword,
+                service: nil,
+                accessGroup: nil,
+                accessibility: nil
+            )
+            let query = try #require(criteria.query as? [String: AnyObject])
+
+            #expect(query[kSecAttrService as String] == nil)
+            #expect(query[kSecClass as String] as? String == kSecClassInternetPassword as String)
+        }
+
+        @Test func internetPasswordSearchFiltersByServerAndSecurityDomain() throws {
+            let criteria = KeychainPassword.internetPasswordSearchCriteria(
+                server: "example.com",
+                securityDomain: "realm",
+                accessGroup: nil,
+                useDataProtectionKeychain: true
+            )
+            let query = try #require(criteria.query as? [String: AnyObject])
+
+            #expect(query[kSecClass as String] as? String == kSecClassInternetPassword as String)
+            #expect(query[kSecAttrService as String] == nil)
+            #expect(query[kSecAttrServer as String] as? String == "example.com")
+            #expect(query[kSecAttrSecurityDomain as String] as? String == "realm")
+            #expect(query[kSecAttrSynchronizable as String] as? String == kSecAttrSynchronizableAny as String)
+            #expect(query[kSecUseDataProtectionKeychain as String] as? Bool == true)
+        }
+
         @Test func genericPasswordHandlesKeepRecordSynchronizability() throws {
             let records = [
                 KeychainRecord([

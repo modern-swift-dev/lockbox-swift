@@ -72,7 +72,6 @@
             let url = try #require(URL(string: "https://example.com/login"))
             let password = KeychainPassword.internet(
                 url: url,
-                service: "com.example.attributes",
                 account: "user",
                 accessibility: .afterFirstUnlock,
                 label: "Label",
@@ -105,23 +104,28 @@
             #expect(createQuery[kSecAttrAccessible as String] as? String == kSecAttrAccessibleAfterFirstUnlock as String)
         }
 
-        @Test func internetPasswordUsesExplicitService() throws {
+        @Test func internetPasswordHasNoServiceAttribute() throws {
             let url = try #require(URL(string: "https://example.com"))
-            let password = KeychainPassword.internet(url: url, service: "com.example.explicit", account: "user")
+            let withDomain = KeychainPassword.internet(url: url, securityDomain: "realm", account: "user")
+            let withoutDomain = KeychainPassword.internet(url: url, account: "user")
 
-            let query = try #require(password.criteria.query as? [String: AnyObject])
-            #expect(query[kSecAttrService as String] as? String == "com.example.explicit")
+            let query = try #require(withDomain.criteria.query as? [String: AnyObject])
+            #expect(query[kSecAttrService as String] == nil)
+            #expect(query[kSecAttrSecurityDomain as String] as? String == "realm")
+            let plainQuery = try #require(withoutDomain.criteria.query as? [String: AnyObject])
+            #expect(plainQuery[kSecAttrService as String] == nil)
+            #expect(plainQuery[kSecAttrSecurityDomain as String] == nil)
         }
 
         @Test func dataProtectionKeychainIsOptIn() throws {
             let url = try #require(URL(string: "https://example.com"))
             let defaults = [
                 KeychainPassword.generic(service: "com.example.dp", account: "user"),
-                KeychainPassword.internet(url: url, service: "com.example.dp", account: "user")
+                KeychainPassword.internet(url: url, account: "user")
             ]
             let optedIn = [
                 KeychainPassword.generic(service: "com.example.dp", account: "user", useDataProtectionKeychain: true),
-                KeychainPassword.internet(url: url, service: "com.example.dp", account: "user", useDataProtectionKeychain: true)
+                KeychainPassword.internet(url: url, account: "user", useDataProtectionKeychain: true)
             ]
 
             for password in defaults {

@@ -79,7 +79,6 @@
             let password = KeychainPassword.internet(
                 url: url,
                 authenticationType: .httpBasic,
-                service: "com.example.url",
                 account: "user"
             )
             let passwordQuery = try #require(password.criteria.query as? [String: AnyObject])

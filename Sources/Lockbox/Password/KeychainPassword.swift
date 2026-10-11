@@ -5,7 +5,7 @@
     /// A handle for a single generic or internet password item in the keychain.
     ///
     /// Create a handle with ``generic(service:account:accessGroup:synchronizable:useDataProtectionKeychain:accessibility:accessControl:label:comment:description:contextProvider:)``
-    /// or ``internet(url:authenticationType:service:account:accessGroup:synchronizable:useDataProtectionKeychain:accessibility:accessControl:label:comment:description:contextProvider:)``,
+    /// or ``internet(url:authenticationType:securityDomain:account:accessGroup:synchronizable:useDataProtectionKeychain:accessibility:accessControl:label:comment:description:contextProvider:)``,
     /// then use ``set(data:)``, ``set(string:)``, ``getData()``, ``getString()``, or
     /// ``remove()`` to operate on its matching item. A handle does not read or retain
     /// the item's secret until a retrieval method is called.

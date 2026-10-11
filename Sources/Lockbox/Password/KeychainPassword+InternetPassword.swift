@@ -10,15 +10,17 @@
             /// Creates a handle for an internet-password keychain item.
             ///
             /// An internet password is identified by its URL attributes, authentication type,
-            /// service, and account. The URL is mapped like ``KeychainCriterion/url(_:_:)``.
+            /// security domain, and account. The URL is mapped like ``KeychainCriterion/url(_:_:)``.
+            /// Internet passwords have no service attribute; on iOS, the app's access groups
+            /// already keep its items separate from other apps' items.
             /// The returned handle does not create a keychain item until data is stored with
             /// ``set(data:)`` or ``set(string:)``.
             ///
             /// - Parameters:
             ///   - url: The URL whose scheme, host, port, and path identify the internet password.
             ///   - authenticationType: The authentication type associated with the password.
-            ///   - service: An application-defined service namespace, such as the app's
-            ///     bundle identifier.
+            ///   - securityDomain: An optional security domain, such as an HTTP
+            ///     authentication realm (`kSecAttrSecurityDomain`).
             ///   - account: The account identifier, such as a user name or email address.
             ///   - accessGroup: An optional shared keychain access group. The calling app must
             ///     have the corresponding entitlement.
@@ -40,7 +42,7 @@
             static func internet(
                 url: URL,
                 authenticationType: KeychainCriterion.AuthenticationType = .default,
-                service: String,
+                securityDomain: String? = nil,
                 account: String,
                 accessGroup: String? = nil,
                 synchronizable: Bool? = nil,
@@ -55,7 +57,7 @@
                 makeInternet(
                     url: url,
                     authenticationType: authenticationType,
-                    service: service,
+                    securityDomain: securityDomain,
                     account: account,
                     accessGroup: accessGroup,
                     synchronizable: synchronizable,
@@ -76,15 +78,17 @@
             /// Creates a handle for an internet-password keychain item.
             ///
             /// An internet password is identified by its URL attributes, authentication type,
-            /// service, and account. The URL is mapped like ``KeychainCriterion/url(_:_:)``.
+            /// security domain, and account. The URL is mapped like ``KeychainCriterion/url(_:_:)``.
+            /// Internet passwords have no service attribute; on iOS, the app's access groups
+            /// already keep its items separate from other apps' items.
             /// The returned handle does not create a keychain item until data is stored with
             /// ``set(data:)`` or ``set(string:)``.
             ///
             /// - Parameters:
             ///   - url: The URL whose scheme, host, port, and path identify the internet password.
             ///   - authenticationType: The authentication type associated with the password.
-            ///   - service: An application-defined service namespace, such as the app's
-            ///     bundle identifier.
+            ///   - securityDomain: An optional security domain, such as an HTTP
+            ///     authentication realm (`kSecAttrSecurityDomain`).
             ///   - account: The account identifier, such as a user name or email address.
             ///   - accessGroup: An optional shared keychain access group. The calling app must
             ///     have the corresponding entitlement.
@@ -104,7 +108,7 @@
             static func internet(
                 url: URL,
                 authenticationType: KeychainCriterion.AuthenticationType = .default,
-                service: String,
+                securityDomain: String? = nil,
                 account: String,
                 accessGroup: String? = nil,
                 synchronizable: Bool? = nil,
@@ -118,7 +122,7 @@
                 makeInternet(
                     url: url,
                     authenticationType: authenticationType,
-                    service: service,
+                    securityDomain: securityDomain,
                     account: account,
                     accessGroup: accessGroup,
                     synchronizable: synchronizable,
@@ -134,13 +138,16 @@
             }
         #endif
 
-        /// Returns handles for all internet-password items in a service.
+        /// Returns handles for the internet-password items the app can access.
         ///
         /// Returned handles preserve the stored identity attributes directly, including
-        /// protocols that cannot be represented by the URL convenience API.
+        /// protocols that cannot be represented by the URL convenience API. On macOS, the
+        /// login keychain also contains internet passwords saved by other apps, so narrow
+        /// the search with `server` or `securityDomain`.
         ///
         /// - Parameters:
-        ///   - service: The service namespace whose internet-password items to find.
+        ///   - server: An optional server host to match.
+        ///   - securityDomain: An optional security domain to match.
         ///   - accessGroup: An optional shared keychain access group used to limit the search.
         ///   - useDataProtectionKeychain: Whether macOS searches the data protection keychain.
         ///     The returned handles use the same keychain.
@@ -148,21 +155,45 @@
         ///   Returns an empty array when no items match.
         /// - Throws: ``KeychainError`` when the Security framework cannot search the keychain.
         static func allInternetPassword(
-            service: String,
+            server: String? = nil,
+            securityDomain: String? = nil,
             accessGroup: String? = nil,
             useDataProtectionKeychain: Bool = false
         ) throws(KeychainError) -> [KeychainPassword] {
-            let accounts = try KeychainCriterion.findAll(
-                type: .internetPassword,
-                service: service,
+            let criteria = internetPasswordSearchCriteria(
+                server: server,
+                securityDomain: securityDomain,
                 accessGroup: accessGroup,
                 useDataProtectionKeychain: useDataProtectionKeychain
             )
-            return internetPasswords(from: accounts, useDataProtectionKeychain: useDataProtectionKeychain)
+            let records = try KeychainCriterion.records(matching: criteria)
+            return internetPasswords(from: records, useDataProtectionKeychain: useDataProtectionKeychain)
         }
     }
 
     extension KeychainPassword {
+        /// The query used by ``allInternetPassword(server:securityDomain:accessGroup:useDataProtectionKeychain:)``.
+        static func internetPasswordSearchCriteria(
+            server: String?,
+            securityDomain: String?,
+            accessGroup: String?,
+            useDataProtectionKeychain: Bool
+        ) -> [KeychainCriterion] {
+            var criteria = KeychainCriterion.findAllCriteria(
+                type: .internetPassword,
+                service: nil,
+                accessGroup: accessGroup,
+                accessibility: nil
+            )
+            if let server {
+                criteria.append(.urlHost(server))
+            }
+            if let securityDomain {
+                criteria.append(.securityDomain(securityDomain))
+            }
+            return criteria + options(useDataProtectionKeychain: useDataProtectionKeychain, contextProvider: nil)
+        }
+
         /// Builds handles from the stored identity attributes of each record.
         static func internetPasswords(
             from records: [KeychainRecord],
@@ -179,7 +210,7 @@
         static func makeInternet(
             url: URL,
             authenticationType: KeychainCriterion.AuthenticationType,
-            service: String,
+            securityDomain: String?,
             account: String,
             accessGroup: String?,
             synchronizable: Bool?,
@@ -189,10 +220,13 @@
 
             var criteria: [KeychainCriterion] = [
                 .securityClass(.internetPassword),
-                .service(service),
                 .account(account),
                 .synchronizable(synchronizable)
             ]
+
+            if let securityDomain {
+                criteria.append(.securityDomain(securityDomain))
+            }
 
             if let accessGroup {
                 criteria.append(.accessGroup(accessGroup))

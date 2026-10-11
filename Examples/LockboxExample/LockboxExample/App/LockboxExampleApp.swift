@@ -132,7 +132,6 @@ private final class ExampleViewModel: ObservableObject {
 
         return KeychainPassword.internet(
             url: url,
-            service: service,
             account: internetAccount
         )
     }

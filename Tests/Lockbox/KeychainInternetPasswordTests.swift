@@ -24,7 +24,7 @@
             ]
             defer { try? criteria.delete() }
             try criteria.create(data: Data("original".utf8))
-            let handles = try KeychainPassword.allInternetPassword(service: service)
+            let handles = try KeychainPassword.allInternetPassword(securityDomain: service)
             let handle = try #require(handles.first {
                 let query = $0.criteria.query as NSDictionary
                 return query[kSecAttrAccount as String] as? String == account
@@ -36,23 +36,25 @@
             #expect(try !criteria.exists())
         }
 
-        private let testService = "com.slkeychain.internet.\(UUID().uuidString)"
+        private let testDomain = "com.slkeychain.internet.\(UUID().uuidString)"
 
-        private func cleanup(service: String, account: String, url: URL) {
-            let password = KeychainPassword.internet(url: url, service: service, account: account)
+        private func cleanup(securityDomain: String, account: String, url: URL) {
+            let password = KeychainPassword.internet(url: url, securityDomain: securityDomain, account: account)
             try? password.remove()
         }
 
         @Test func internetPasswordCreationWithHTTPS() throws {
             let url = try #require(URL(string: "https://api.example.com/auth"))
             let account = "test_\(UUID().uuidString)"
-            let password = KeychainPassword.internet(url: url, service: testService, account: account)
+            let password = KeychainPassword.internet(url: url, securityDomain: testDomain, account: account)
 
             #expect(!password.criteria.isEmpty)
 
             let query = try #require(password.criteria.query as? [String: AnyObject])
             #expect(query[kSecClass as String] as? String == kSecClassInternetPassword as String)
-            #expect(query[kSecAttrService as String] as? String == testService)
+            // Internet passwords have no service attribute; iOS rejects it.
+            #expect(query[kSecAttrService as String] == nil)
+            #expect(query[kSecAttrSecurityDomain as String] as? String == testDomain)
             #expect(query[kSecAttrAccount as String] as? String == account)
             #expect(query[kSecAttrProtocol as String] as? String == kSecAttrProtocolHTTPS as String)
             #expect((query[kSecAttrPort as String] as? NSNumber)?.intValue == 443)
@@ -63,7 +65,7 @@
         @Test func internetPasswordCreationWithHTTP() throws {
             let url = try #require(URL(string: "http://example.com/login"))
             let account = "test_\(UUID().uuidString)"
-            let password = KeychainPassword.internet(url: url, service: testService, account: account)
+            let password = KeychainPassword.internet(url: url, securityDomain: testDomain, account: account)
 
             let query = try #require(password.criteria.query as? [String: AnyObject])
             #expect(query[kSecAttrProtocol as String] as? String == kSecAttrProtocolHTTP as String)
@@ -73,7 +75,7 @@
         @Test func internetPasswordCreationWithCustomPort() throws {
             let url = try #require(URL(string: "https://api.example.com:8443/auth"))
             let account = "test_\(UUID().uuidString)"
-            let password = KeychainPassword.internet(url: url, service: testService, account: account)
+            let password = KeychainPassword.internet(url: url, securityDomain: testDomain, account: account)
 
             let query = try #require(password.criteria.query as? [String: AnyObject])
             #expect((query[kSecAttrPort as String] as? NSNumber)?.intValue == 8443)
@@ -85,7 +87,7 @@
             components.path = "/auth"
             let url = try #require(components.url)
             let account = "test_\(UUID().uuidString)"
-            let password = KeychainPassword.internet(url: url, service: testService, account: account)
+            let password = KeychainPassword.internet(url: url, securityDomain: testDomain, account: account)
 
             let query = try #require(password.criteria.query as? [String: AnyObject])
             #expect(query[kSecAttrProtocol as String] as? String == kSecAttrProtocolHTTPS as String)
@@ -97,7 +99,7 @@
         @Test func internetPasswordCreationWithRootPathUsesSlash() throws {
             let url = try #require(URL(string: "https://api.example.com"))
             let account = "test_\(UUID().uuidString)"
-            let password = KeychainPassword.internet(url: url, service: testService, account: account)
+            let password = KeychainPassword.internet(url: url, securityDomain: testDomain, account: account)
 
             let query = try #require(password.criteria.query as? [String: AnyObject])
             #expect(query[kSecAttrPath as String] as? String == "/")
@@ -109,7 +111,7 @@
             let password = KeychainPassword.internet(
                 url: url,
                 authenticationType: .httpBasic,
-                service: testService,
+                securityDomain: testDomain,
                 account: account
             )
 
@@ -136,7 +138,7 @@
                 let password = KeychainPassword.internet(
                     url: url,
                     authenticationType: .httpDigest,
-                    service: testService,
+                    securityDomain: testDomain,
                     account: account,
                     accessGroup: accessGroup,
                     synchronizable: true,
@@ -159,9 +161,9 @@
         @Test(.requiresKeychain) func internetPasswordSetAndGet() throws {
             let url = try #require(URL(string: "https://api.test.com/auth"))
             let account = "inet_test_\(UUID().uuidString)"
-            let password = KeychainPassword.internet(url: url, service: testService, account: account)
+            let password = KeychainPassword.internet(url: url, securityDomain: testDomain, account: account)
 
-            defer { cleanup(service: testService, account: account, url: url) }
+            defer { cleanup(securityDomain: testDomain, account: account, url: url) }
 
             try password.set(string: "myInternetPassword")
             let retrieved = try password.getString()
@@ -172,9 +174,9 @@
         @Test(.requiresKeychain) func internetPasswordUpdate() throws {
             let url = try #require(URL(string: "https://api.test.com/auth"))
             let account = "inet_update_\(UUID().uuidString)"
-            let password = KeychainPassword.internet(url: url, service: testService, account: account)
+            let password = KeychainPassword.internet(url: url, securityDomain: testDomain, account: account)
 
-            defer { cleanup(service: testService, account: account, url: url) }
+            defer { cleanup(securityDomain: testDomain, account: account, url: url) }
 
             try password.set(string: "initial")
             try password.set(string: "updated")
@@ -186,7 +188,7 @@
         @Test(.requiresKeychain) func internetPasswordRemove() throws {
             let url = try #require(URL(string: "https://api.test.com/auth"))
             let account = "inet_remove_\(UUID().uuidString)"
-            let password = KeychainPassword.internet(url: url, service: testService, account: account)
+            let password = KeychainPassword.internet(url: url, securityDomain: testDomain, account: account)
 
             try password.set(string: "toBeRemoved")
             try password.remove()

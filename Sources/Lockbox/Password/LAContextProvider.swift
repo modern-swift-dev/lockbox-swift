@@ -6,7 +6,7 @@
         /// A sendable factory that supplies an `LAContext` for a keychain operation.
         ///
         /// Pass a provider to ``KeychainPassword/generic(service:account:accessGroup:synchronizable:useDataProtectionKeychain:accessibility:accessControl:label:comment:description:contextProvider:)``
-        /// or ``KeychainPassword/internet(url:authenticationType:service:account:accessGroup:synchronizable:useDataProtectionKeychain:accessibility:accessControl:label:comment:description:contextProvider:)``
+        /// or ``KeychainPassword/internet(url:authenticationType:securityDomain:account:accessGroup:synchronizable:useDataProtectionKeychain:accessibility:accessControl:label:comment:description:contextProvider:)``
         /// when the item's access control requires Local Authentication. The provider is
         /// evaluated while constructing a Security framework query.
         public typealias LAContextProvider = @Sendable () -> LAContext

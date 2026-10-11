@@ -67,12 +67,12 @@
             let delete: () throws(KeychainError) -> Void = criteria.delete
             let create: (Data) throws(KeychainError) -> Void = criteria.create(data:)
             let createOrUpdate: (Data) throws(KeychainError) -> Void = criteria.createOrUpdate(data:)
-            let findAll: (KeychainCriterion.SecurityClass, String, String?, KeychainCriterion.Accessibility?, Bool) throws(KeychainError)
+            let findAll: (KeychainCriterion.SecurityClass, String?, String?, KeychainCriterion.Accessibility?, Bool) throws(KeychainError)
                 -> [KeychainRecord] = KeychainCriterion.findAll(type:service:accessGroup:accessibility:useDataProtectionKeychain:)
             let allGeneric: (String, String?, Bool) throws(KeychainError) -> [KeychainPassword] = KeychainPassword
                 .allGenericPassword(service:accessGroup:useDataProtectionKeychain:)
-            let allInternet: (String, String?, Bool) throws(KeychainError) -> [KeychainPassword] = KeychainPassword
-                .allInternetPassword(service:accessGroup:useDataProtectionKeychain:)
+            let allInternet: (String?, String?, String?, Bool) throws(KeychainError) -> [KeychainPassword] = KeychainPassword
+                .allInternetPassword(server:securityDomain:accessGroup:useDataProtectionKeychain:)
             _ = (setData, setString, getData, getString, remove, exists, retrieve, delete, create, createOrUpdate)
             _ = (findAll, allGeneric, allInternet)
         }

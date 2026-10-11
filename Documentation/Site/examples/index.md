@@ -48,7 +48,7 @@ let backgroundToken = KeychainPassword.generic(
 
 ## Internet password
 
-Attach the credential to its URL. Lockbox turns the URL into the keychain attributes needed by an internet password item.
+Attach the credential to its URL. Lockbox turns the URL into the keychain attributes needed by an internet password item. Internet passwords are identified by their URL, account, and optional security domain; they have no service.
 
 Internet password
 
@@ -58,7 +58,6 @@ import Lockbox
 
 let password = KeychainPassword.internet(
     url: URL(string: "https://api.example.com/oauth/token")!,
-    service: "com.example.api",
     account: "person@example.com"
 )
 
