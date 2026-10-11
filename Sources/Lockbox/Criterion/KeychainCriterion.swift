@@ -321,7 +321,12 @@
                 attributesToUpdate.append(.label(label))
             }
 
-            let status = SecItemUpdate(query, attributesToUpdate.query)
+            try update(attributes: attributesToUpdate)
+        }
+
+        /// Replaces the given attributes on every item matching these criteria.
+        internal func update(attributes: [KeychainCriterion]) throws {
+            let status = SecItemUpdate(query, attributes.query)
             if !status.isSuccessful {
                 throw KeychainError.underlyingError(status: status, message: status.errorMessage)
             }

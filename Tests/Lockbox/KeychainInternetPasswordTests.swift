@@ -174,8 +174,10 @@
                 let synchronizable = try #require(query[kSecAttrSynchronizable as String] as? Bool)
                 #expect(synchronizable)
                 #expect(query[kSecAttrAuthenticationType as String] as? String == kSecAttrAuthenticationTypeHTTPDigest as String)
-                #expect(query[kSecAttrAccessControl as String] != nil)
+                #expect(query[kSecAttrAccessControl as String] == nil)
                 #expect(query[kSecUseAuthenticationContext as String] is LAContext)
+                let createQuery = try #require(password.createCriteria.query as? [String: AnyObject])
+                #expect(createQuery[kSecAttrAccessControl as String] != nil)
             }
 
             @Test func internetPasswordSetAndGet() throws {

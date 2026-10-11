@@ -26,7 +26,7 @@
         ///   whether the item exists, create it, or update it.
         func set(string: String) throws {
             if let data = string.data(using: .utf8) {
-                try criteria.createOrUpdate(data: data)
+                try write(data: data)
             }
         }
 

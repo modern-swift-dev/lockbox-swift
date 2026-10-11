@@ -41,6 +41,11 @@
                 contextProvider: LAContextProvider? = nil
             ) -> KeychainPassword {
 
+                var attributes: [KeychainCriterion] = []
+                if let accessControl {
+                    attributes.append(.accessControl(accessControl))
+                }
+
                 var criteria: [KeychainCriterion] = [
                     .securityClass(.internetPassword),
                     .service(service),
@@ -50,10 +55,6 @@
 
                 if let accessGroup {
                     criteria.append(.accessGroup(accessGroup))
-                }
-
-                if let control = accessControl {
-                    criteria.append(.accessControl(control))
                 }
 
                 if let provider = contextProvider {
@@ -99,7 +100,7 @@
                 }
 
                 criteria.append(.urlAuthenticationType(authenticationType))
-                return .init(criteria: criteria)
+                return .init(criteria: criteria, attributes: attributes)
             }
 
             /// Returns handles for all internet-password items in a service.

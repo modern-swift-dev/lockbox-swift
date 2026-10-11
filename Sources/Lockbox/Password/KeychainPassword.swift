@@ -24,8 +24,20 @@
         /// The criteria used to identify this keychain item and configure its operations.
         ///
         /// The criteria include the item's keychain class and identifying attributes,
-        /// such as its service and account. They do not include the item's stored data.
+        /// such as its service and account. They do not include the item's stored data
+        /// or the write-only ``attributes``.
         public let criteria: [KeychainCriterion]
+
+        /// Attributes applied when the item is written but never used to find it.
+        ///
+        /// Access control is applied only when the item is created. Other attributes
+        /// are applied on creation and replaced on update.
+        public let attributes: [KeychainCriterion]
+
+        init(criteria: [KeychainCriterion], attributes: [KeychainCriterion] = []) {
+            self.criteria = criteria
+            self.attributes = attributes
+        }
 
         /// Deletes the keychain item matching ``criteria``.
         ///
@@ -37,6 +49,31 @@
 
         func retrieve() throws -> KeychainRecord? {
             try criteria.retrieve()
+        }
+
+        /// The criteria used to create a new item.
+        var createCriteria: [KeychainCriterion] {
+            criteria + attributes
+        }
+
+        /// The attributes written when an existing item is updated.
+        ///
+        /// Access control can't be changed after creation, so it's excluded.
+        func updateAttributes(data: Data) -> [KeychainCriterion] {
+            [.data(data)] + attributes.filter {
+                if case .accessControl = $0 {
+                    return false
+                }
+                return true
+            }
+        }
+
+        /// Creates the item, or updates it when an equivalent item already exists.
+        func write(data: Data) throws {
+            try [KeychainCriterion].upsert(
+                create: { try createCriteria.create(data: data) },
+                update: { try criteria.update(attributes: updateAttributes(data: data)) }
+            )
         }
     }
 

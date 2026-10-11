@@ -33,6 +33,11 @@
                 contextProvider: LAContextProvider? = nil
             ) -> KeychainPassword {
 
+                var attributes: [KeychainCriterion] = []
+                if let accessControl {
+                    attributes.append(.accessControl(accessControl))
+                }
+
                 var criteria: [KeychainCriterion] = [
                     .securityClass(.genericPassword),
                     .service(service),
@@ -44,15 +49,11 @@
                     criteria.append(.accessGroup(accessGroup))
                 }
 
-                if let control = accessControl {
-                    criteria.append(.accessControl(control))
-                }
-
                 if let provider = contextProvider {
                     criteria.append(.localAuthenticationContextProvider(provider))
                 }
 
-                return .init(criteria: criteria)
+                return .init(criteria: criteria, attributes: attributes)
             }
 
             /// Returns handles for all generic-password items in a service.

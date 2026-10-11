@@ -20,7 +20,7 @@
         /// - Throws: ``KeychainError`` when the Security framework cannot determine
         ///   whether the item exists, create it, or update it.
         func set(data: Data) throws {
-            try criteria.createOrUpdate(data: data)
+            try write(data: data)
         }
     }
 
