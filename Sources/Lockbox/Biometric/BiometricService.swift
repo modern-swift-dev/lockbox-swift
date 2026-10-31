@@ -194,13 +194,13 @@
                 do {
                     switch result {
                         case .success:
-                            guard let state = authentication.biometricState else {
-                                throw BiometricServiceError.unavailable
-                            }
                             let credentials = Credentials(username: username, password: password)
                             let data = try JSONEncoder().encode(credentials)
                             let keychain = keychain
                             try await Self.performOffMainActor {
+                                guard let state = authentication.biometricState else {
+                                    throw BiometricServiceError.unavailable
+                                }
                                 // Never update a biometric item: an update has to read it, which
                                 // needs authentication and fails once a biometric change has
                                 // invalidated it. Deleting needs neither.

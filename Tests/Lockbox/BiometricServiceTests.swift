@@ -113,7 +113,7 @@
                 #expect(await !service.hasCredentials)
             }
 
-            @Test func existenceQueryCannotRequestSecretsOrPresentAuthentication() throws {
+            @Test func attributeQueryCannotRequestSecretsOrPresentAuthentication() throws {
                 let authentication = MockLocalAuthenticationService(result: .success)
                 let store = KeychainBiometricCredentialStore(
                     password: .generic(service: "BiometricServiceTests", account: "credentials"),
@@ -121,7 +121,7 @@
                     account: "credentials",
                     accessGroup: "group.example"
                 )
-                let query = store.existenceQuery
+                let query = store.attributeQuery
                 #expect(query[kSecReturnData as String] == nil)
                 #expect(query[kSecReturnAttributes as String] as? Bool == true)
                 #expect(query[kSecAttrAccessGroup as String] as? String == "group.example")
@@ -142,8 +142,8 @@
                 let query = try #require(store.password.criteria.query as? [String: AnyObject])
                 #expect(query[kSecAttrSynchronizable as String] as? Bool == false)
                 #expect(query[kSecAttrAccessGroup as String] as? String == "group.example")
-                #expect(store.existenceQuery[kSecAttrSynchronizable as String] as? Bool == false)
-                #expect(store.existenceQuery[kSecAttrAccessGroup as String] as? String == "group.example")
+                #expect(store.attributeQuery[kSecAttrSynchronizable as String] as? Bool == false)
+                #expect(store.attributeQuery[kSecAttrAccessGroup as String] as? String == "group.example")
             }
 
             @Test func credentialsUseTheDataProtectionKeychain() throws {

@@ -45,7 +45,7 @@
         let accessGroup: String?
 
         /// Attribute-only queries use a separate context so cached prompt settings cannot enable UI.
-        var existenceQuery: [String: Any] {
+        var attributeQuery: [String: Any] {
             let context = LAContext()
             context.interactionNotAllowed = true
             var query: [String: Any] = [
@@ -66,7 +66,7 @@
 
         func storedItem() -> StoredBiometricItem {
             var result: AnyObject?
-            let status = SecItemCopyMatching(existenceQuery as CFDictionary, &result)
+            let status = SecItemCopyMatching(attributeQuery as CFDictionary, &result)
             return Self.storedItem(status: status, attributes: result as? [String: Any])
         }
 
