@@ -13,7 +13,7 @@ This guide uses a generic password. It is the smallest useful Lockbox workflow, 
 
 ## Requirements
 
-- Swift 6.2
+- Swift 6.3
 
 - macOS 15+, iOS 18+, tvOS 18+, watchOS 10+, or visionOS 1+
 
