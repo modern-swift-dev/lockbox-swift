@@ -112,14 +112,28 @@ try await credentials.save(
     password: "a-secret"
 )
 
-switch try await credentials.retrieve() {
-case .success(let username, let password),
-     .biometricChanged(let username, let password):
-    print(username, password)
+do {
+    let saved = try await credentials.retrieve()
+    print(saved.username, saved.password)
+} catch BiometricServiceError.biometricChanged {
+    // The enrolled biometrics changed, so the saved credentials can never be read.
+    // Sign the user in another way, then save again. You don't need forget() first.
 }
 ```
 
-`hasCredentials` and `forget()` run their keychain and file work off the main actor, so both are `async`:
+Every `save` and `retrieve` asks the user to authenticate. A successful call doesn't unlock the next one.
+
+### When the enrolled biometrics change
+
+The credentials are protected by the biometric set enrolled when they were saved. Adding or removing a fingerprint, or re-enrolling a face, makes the keychain invalidate them permanently. Lockbox records the biometric state with the credentials, so it detects this before prompting:
+
+- `retrieve()` throws `BiometricServiceError.biometricChanged`.
+- `hasCredentials` is `false`.
+- `save(username:password:)` replaces the credentials.
+
+`retrieve()` also throws `.biometricChanged` for credentials saved without a recorded state, such as by Lockbox 2, and on a device that doesn't report its biometric state. Saving again fixes the first case.
+
+`hasCredentials` and `forget()` run their keychain work off the main actor, so both are `async`:
 
 ```swift
 if await credentials.hasCredentials {

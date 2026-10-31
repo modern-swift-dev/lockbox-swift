@@ -14,6 +14,8 @@ Open `LockboxExample.xcodeproj`, select the `LockboxExample` scheme, choose an i
 
 Use a physical device with Face ID or Touch ID enrolled for the most representative biometric behavior. In Simulator, enable Face ID enrollment under **Features > Face ID > Enrolled**, then use **Features > Face ID > Matching Face** when the system prompt appears. The app includes its required `NSFaceIDUsageDescription`.
 
+Each save and retrieve asks you to authenticate. After you change the enrolled biometrics, for example by adding a fingerprint on a device, retrieving reports that the enrollment changed; enter the password and save again to replace the credentials.
+
 Keychain items are scoped to the example app's bundle identifier. Delete an item with the corresponding button before changing accounts or URLs if you want to reset the sample state.
 
 ## Keychain integration tests
