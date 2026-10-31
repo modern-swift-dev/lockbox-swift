@@ -19,6 +19,8 @@
             /// - Parameters:
             ///   - url: The URL whose scheme, host, port, and path identify the internet password.
             ///   - authenticationType: The authentication type associated with the password.
+            ///     Defaults to ``KeychainCriterion/AuthenticationType/default``, the same default
+            ///     as ``KeychainCriterion/url(_:_:)``. It's part of the item's identity.
             ///   - securityDomain: An optional security domain, such as an HTTP
             ///     authentication realm (`kSecAttrSecurityDomain`).
             ///   - account: The account identifier, such as a user name or email address.
@@ -85,6 +87,8 @@
             /// - Parameters:
             ///   - url: The URL whose scheme, host, port, and path identify the internet password.
             ///   - authenticationType: The authentication type associated with the password.
+            ///     Defaults to ``KeychainCriterion/AuthenticationType/default``, the same default
+            ///     as ``KeychainCriterion/url(_:_:)``. It's part of the item's identity.
             ///   - securityDomain: An optional security domain, such as an HTTP
             ///     authentication realm (`kSecAttrSecurityDomain`).
             ///   - account: The account identifier, such as a user name or email address.

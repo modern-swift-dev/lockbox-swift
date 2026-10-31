@@ -105,10 +105,12 @@
         /// - The host is copied in lowercase when present, so hosts that differ only in
         ///   case identify the same item.
         /// - An empty path is stored as `/`.
+        /// - The authentication type defaults to ``AuthenticationType/default``
+        ///   (`kSecAttrAuthenticationTypeDefault`). It's part of the item's identity.
         ///
         /// ``KeychainPassword/internet(url:authenticationType:securityDomain:account:accessGroup:synchronizable:useDataProtectionKeychain:protection:label:comment:description:contextProvider:)``
-        /// uses the same mapping.
-        case url(URL, AuthenticationType = .htmlForm)
+        /// uses the same mapping and the same default authentication type.
+        case url(URL, AuthenticationType = .default)
 
         /// Matches an internet protocol (`kSecAttrProtocol`).
         case urlScheme(InternetProtocol)

@@ -108,6 +108,27 @@
             }
         }
 
+        @Test(arguments: [
+            "https://example.com",
+            "http://example.com:8080/login",
+            "ftp://files.example.com/pub",
+            "ssh://host.example.com:2222",
+            "custom://server.example.com:9000/path"
+        ])
+        func urlCriterionAndInternetPasswordAgreeByDefault(string: String) throws {
+            let url = try #require(URL(string: string))
+            let urlQuery = try #require([KeychainCriterion.url(url)].query as? [String: AnyObject])
+            let password = KeychainPassword.internet(url: url, account: "user")
+            let passwordQuery = try #require(password.criteria.query as? [String: AnyObject])
+
+            for key in [kSecAttrProtocol, kSecAttrPort, kSecAttrServer, kSecAttrPath, kSecAttrAuthenticationType] {
+                #expect(urlQuery[key as String] as? NSObject == passwordQuery[key as String] as? NSObject, "\(key)")
+            }
+            let defaultType = kSecAttrAuthenticationTypeDefault as String
+            #expect(urlQuery[kSecAttrAuthenticationType as String] as? String == defaultType)
+            #expect(passwordQuery[kSecAttrAuthenticationType as String] as? String == defaultType)
+        }
+
         @Test func urlWithExplicitPortKeepsPortForNonHTTPSchemes() throws {
             let url = try #require(URL(string: "ssh://host.example.com:2222"))
             let query = try #require([KeychainCriterion.url(url)].query as? [String: AnyObject])
