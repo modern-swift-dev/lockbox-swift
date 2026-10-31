@@ -199,11 +199,11 @@
                 guard isProperlyConfigured else {
                     throw BiometricServiceError.unconfigured
                 }
-                let (keychain, baseline, authentication) = (keychain, baseline, localAuthenticationService)
                 // Don't ask the user to authenticate for credentials that aren't there.
-                guard await Self.performOffMainActor({ keychain.exists() }) else {
+                guard await hasCredentials else {
                     throw BiometricServiceError.noCredentials
                 }
+                let (keychain, baseline, authentication) = (keychain, baseline, localAuthenticationService)
                 let result = await localAuthenticationService.evaluate(
                     access: Self.makeAccessControl(),
                     operation: .useItem,

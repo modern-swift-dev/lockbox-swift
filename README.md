@@ -6,7 +6,7 @@ Read the [Lockbox documentation](https://modern-swift-dev.github.io/docs/lockbox
 
 ## Requirements
 
-- Swift 6
+- Swift 6.2
 - macOS 15+, iOS 18+, tvOS 18+, watchOS 10+, or visionOS 1+
 
 Some APIs have narrower platform availability. The [documentation hub](https://modern-swift-dev.github.io/docs/lockbox-swift/documentation/) lists those limits.

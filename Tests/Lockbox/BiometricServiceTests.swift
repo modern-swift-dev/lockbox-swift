@@ -230,9 +230,13 @@
                 let service = makeService(authentication: authentication, keychain: keychain)
 
                 _ = await service.hasCredentials
+                #expect(keychain.mainThreadAccessCount == 0, "hasCredentials")
                 try await service.save(username: "user", password: "secret")
+                #expect(keychain.mainThreadAccessCount == 0, "save")
                 _ = try await service.retrieve()
+                #expect(keychain.mainThreadAccessCount == 0, "retrieve")
                 await service.forget()
+                #expect(keychain.mainThreadAccessCount == 0, "forget")
 
                 #expect(keychain.operations == [
                     .write(afterEvaluations: 1),
