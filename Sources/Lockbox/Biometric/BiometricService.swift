@@ -68,9 +68,13 @@
             /// A Boolean value that indicates whether the configured keychain item exists.
             ///
             /// This property does not authenticate or decode the stored credentials. Other
-            /// keychain errors are treated as an absence of credentials.
+            /// keychain errors are treated as an absence of credentials. The keychain query
+            /// runs off the main actor.
             public var hasCredentials: Bool {
-                keychain.exists()
+                get async {
+                    let keychain = keychain
+                    return await Self.performOffMainActor { keychain.exists() }
+                }
             }
 
             /// Creates a biometric credential service for a generic-password keychain item.
@@ -236,10 +240,13 @@
             /// Removes the stored credentials and their recorded biometric state.
             ///
             /// Removal errors are ignored. Call ``hasCredentials`` to inspect whether data
-            /// remains accessible afterward.
-            public func forget() {
-                try? keychain.remove()
-                try? baseline.remove()
+            /// remains accessible afterward. The keychain and file work runs off the main actor.
+            public func forget() async {
+                let (keychain, baseline) = (keychain, baseline)
+                await Self.performOffMainActor {
+                    try? keychain.remove()
+                    try? baseline.remove()
+                }
             }
 
             /// Creates the access control that protects the credentials.
@@ -258,8 +265,11 @@
             /// Runs blocking keychain and file work away from the main actor.
             ///
             /// Keychain Services blocks the calling thread, which would hang the UI on the
-            /// main thread. A nonisolated async function runs on the global concurrent executor.
-            private nonisolated static func performOffMainActor<T: Sendable>(
+            /// main thread. `@concurrent` always runs the function on the global concurrent
+            /// executor. Without it, a nonisolated async function would run on the caller's
+            /// actor when the `NonisolatedNonsendingByDefault` upcoming feature is enabled.
+            @concurrent
+            private static func performOffMainActor<T: Sendable>(
                 _ work: @Sendable () throws -> T
             ) async rethrows -> T {
                 try work()

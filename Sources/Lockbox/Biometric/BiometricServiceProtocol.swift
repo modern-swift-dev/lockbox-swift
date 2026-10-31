@@ -18,7 +18,9 @@
             var supportedByDevice: Bool { get }
 
             /// A Boolean value that indicates whether protected credentials are present.
-            var hasCredentials: Bool { get }
+            ///
+            /// The keychain query runs off the main actor.
+            var hasCredentials: Bool { get async }
 
             /// Authenticates the user and stores credentials protected by biometrics.
             ///
@@ -34,8 +36,8 @@
             /// - Throws: An error if biometric authentication or keychain access fails.
             func retrieve() async throws -> BiometricServiceResult
 
-            /// Removes the protected credentials.
-            func forget()
+            /// Removes the protected credentials, off the main actor.
+            func forget() async
         }
     #endif
 

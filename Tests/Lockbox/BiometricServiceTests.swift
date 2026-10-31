@@ -85,7 +85,7 @@
                 let keychain = MockBiometricCredentialStore(authentication: authentication)
                 let service = makeService(authentication: authentication, keychain: keychain)
 
-                #expect(!service.hasCredentials)
+                #expect(await !service.hasCredentials)
                 do {
                     _ = try await service.retrieve()
                     Issue.record("Expected missing credentials")
@@ -118,11 +118,11 @@
                 let keychain = MockBiometricCredentialStore(authentication: authentication)
                 let service = makeService(authentication: authentication, keychain: keychain)
 
-                #expect(!service.hasCredentials)
+                #expect(await !service.hasCredentials)
                 try await service.save(username: "user", password: "secret")
-                #expect(service.hasCredentials)
-                service.forget()
-                #expect(!service.hasCredentials)
+                #expect(await service.hasCredentials)
+                await service.forget()
+                #expect(await !service.hasCredentials)
             }
 
             @Test func existenceQueryCannotRequestSecretsOrPresentAuthentication() throws {
@@ -229,10 +229,16 @@
                 let keychain = MockBiometricCredentialStore(authentication: authentication)
                 let service = makeService(authentication: authentication, keychain: keychain)
 
+                _ = await service.hasCredentials
                 try await service.save(username: "user", password: "secret")
                 _ = try await service.retrieve()
+                await service.forget()
 
-                #expect(keychain.operations.count == 2)
+                #expect(keychain.operations == [
+                    .write(afterEvaluations: 1),
+                    .read(afterEvaluations: 2),
+                    .remove
+                ])
                 #expect(keychain.mainThreadAccessCount == 0)
             }
 
@@ -305,7 +311,7 @@
                 try await service.save(username: "user", password: "secret")
                 #expect(baselineExists())
 
-                service.forget()
+                await service.forget()
 
                 #expect(!baselineExists())
                 #expect(keychain.operations.last == .remove)
@@ -442,6 +448,7 @@
 
             func remove() throws {
                 lock.withLock {
+                    noteThread()
                     recordedOperations.append(.remove)
                     data = nil
                 }
