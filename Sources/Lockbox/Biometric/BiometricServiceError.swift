@@ -15,9 +15,6 @@
             /// No credentials are stored.
             case noCredentials
 
-            /// Device-only biometric credentials cannot synchronize through iCloud Keychain.
-            case synchronizationUnsupported
-
             /// Authentication or credential access failed.
             case failed
 
@@ -60,8 +57,6 @@
                         "Biometric authentication isn't set up on this device."
                     case .noCredentials:
                         "No saved credentials were found."
-                    case .synchronizationUnsupported:
-                        "Biometric credentials can't sync through iCloud Keychain."
                     case .failed:
                         "Biometric authentication failed."
                     case .userFallback:

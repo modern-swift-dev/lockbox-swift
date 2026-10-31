@@ -44,9 +44,6 @@
             /// The access group
             private let accessGroup: String?
 
-            /// Is it synchronizable through iCloud?
-            private let synchronizable: Bool
-
             /// The Keychain Item that wraps the credentials
             let keychain: any BiometricCredentialStore
 
@@ -82,22 +79,18 @@
             ///   - service: The keychain service name, such as the app's bundle identifier.
             ///   - account: The account name used to identify the keychain item.
             ///   - accessGroup: The keychain access group, or `nil` to use the app's default access.
-            ///   - synchronizable: Must be `false`. Device-only biometric credentials cannot sync;
-            ///     `save` rejects `true` before authentication.
             ///   - localAuthenticationService: The local-authentication service used for prompts
             ///     and as the keychain authentication context.
             public convenience init(
                 service: String,
                 account: String = "credentials",
-                group accessGroup: String? = nil,
-                synchronizable: Bool = false,
+                accessGroup: String? = nil,
                 localAuthenticationService: any LocalAuthenticationServiceProtocol
             ) {
                 self.init(
                     service: service,
                     account: account,
-                    group: accessGroup,
-                    synchronizable: synchronizable,
+                    accessGroup: accessGroup,
                     localAuthenticationService: localAuthenticationService,
                     keychainOverride: nil
                 )
@@ -106,8 +99,7 @@
             init(
                 service: String,
                 account: String = "credentials",
-                group accessGroup: String? = nil,
-                synchronizable: Bool = false,
+                accessGroup: String? = nil,
                 localAuthenticationService: any LocalAuthenticationServiceProtocol,
                 keychainOverride: (any BiometricCredentialStore)?,
                 baselineDirectory: URL = .applicationSupportDirectory
@@ -115,7 +107,6 @@
                 self.service = service
                 self.account = account
                 self.accessGroup = accessGroup
-                self.synchronizable = synchronizable
                 self.localAuthenticationService = localAuthenticationService
                 baseline = .forItem(service: service, account: account, accessGroup: accessGroup, in: baselineDirectory)
 
@@ -124,7 +115,8 @@
                         service: service,
                         account: account,
                         accessGroup: accessGroup,
-                        synchronizable: synchronizable,
+                        // Biometric items are device-only, so they never sync through iCloud Keychain.
+                        synchronizable: false,
                         // Access-controlled items require the data protection keychain on macOS.
                         useDataProtectionKeychain: true,
                         protection: .accessControl(Self.makeAccessControl()),
@@ -132,8 +124,7 @@
                     ),
                     service: service,
                     account: account,
-                    accessGroup: accessGroup,
-                    synchronizable: synchronizable
+                    accessGroup: accessGroup
                 )
             }
 
@@ -145,14 +136,11 @@
             ///   - username: The username or email address to store.
             ///   - password: The password to store.
             /// - Throws: ``BiometricServiceError`` when biometrics are unsupported, not
-            ///   configured, rejected, locked out, or unavailable, or synchronization is requested.
+            ///   configured, rejected, locked out, or unavailable.
             ///   A lockout leaves stored credentials in place; the system clears it after the
             ///   user enters the device passcode.
             ///   Encoding, keychain, and biometric-baseline storage errors are wrapped in ``BiometricServiceError/underlying(_:)``.
             public func save(username: String, password: String) async throws {
-                guard !synchronizable else {
-                    throw BiometricServiceError.synchronizationUnsupported
-                }
                 guard supportedByDevice else {
                     throw BiometricServiceError.unsupported
                 }
