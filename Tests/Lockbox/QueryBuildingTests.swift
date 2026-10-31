@@ -55,6 +55,18 @@
             #expect(query[kSecAttrSynchronizable as String] == nil)
         }
 
+        @Test(arguments: [KeychainCriterion.synchronizable(true), .synchronizable(false), .synchronizableAny])
+        func laterNilSynchronizableRemovesEarlierValue(earlier: KeychainCriterion) throws {
+            let criteria: [KeychainCriterion] = [
+                .account("user@example.com"),
+                earlier,
+                .synchronizable(nil)
+            ]
+            let query = try #require(criteria.query as? [String: AnyObject])
+            #expect(query[kSecAttrSynchronizable as String] == nil)
+            #expect(query[kSecAttrAccount as String] as? String == "user@example.com")
+        }
+
         @Test func queryContainsAccessGroup() throws {
             let criteria: [KeychainCriterion] = [
                 .accessGroup("group.com.test")

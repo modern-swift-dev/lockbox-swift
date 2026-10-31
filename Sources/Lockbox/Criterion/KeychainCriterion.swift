@@ -38,7 +38,9 @@
 
         /// Matches the synchronizability attribute (`kSecAttrSynchronizable`).
         ///
-        /// Pass `nil` to omit this attribute from the query.
+        /// Pass `nil` to omit this attribute from the query. Like any later criterion,
+        /// `nil` also removes a value set by an earlier `synchronizable` or
+        /// ``synchronizableAny`` criterion in the same array.
         case synchronizable(Bool?)
 
         /// Matches both synchronizable and device-only items
@@ -426,9 +428,7 @@
                 case let .securityDomain(value):
                     query[kSecAttrSecurityDomain as String] = value as AnyObject?
                 case let .synchronizable(value):
-                    if let value {
-                        query[kSecAttrSynchronizable as String] = value ? kCFBooleanTrue : kCFBooleanFalse
-                    }
+                    query[kSecAttrSynchronizable as String] = value.map { $0 ? kCFBooleanTrue : kCFBooleanFalse }
                 case .synchronizableAny:
                     query[kSecAttrSynchronizable as String] = kSecAttrSynchronizableAny
                 case let .account(value):
