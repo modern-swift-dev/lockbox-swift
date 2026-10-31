@@ -56,9 +56,18 @@
         }
 
         public extension LocalAuthenticationServiceProtocol {
-            /// The context's current biometric state hash.
+            /// The biometric state hash of the device's enrolled biometrics, or `nil` when
+            /// none are enrolled or the state isn't available.
+            ///
+            /// The value is `domainState.biometry.stateHash`, which changes when the
+            /// enrolled biometrics change, the same event that invalidates keychain items
+            /// protected with `.biometryCurrentSet`. It ignores paired companion devices, such
+            /// as an Apple Watch. A biometric policy is checked first, because a fresh or
+            /// invalidated context has no domain state until then.
             var biometricState: Data? {
-                context.domainState.stateHash
+                let context = context
+                _ = context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: nil)
+                return context.domainState.biometry.stateHash
             }
         }
 
