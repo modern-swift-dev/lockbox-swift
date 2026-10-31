@@ -15,6 +15,10 @@ The guides explain Lockbox-specific behavior. The DocC reference documents the p
 
 Install the package, save a password, read it, update it, and remove it.
 
+## [Migrating to Lockbox 3](/docs/lockbox-swift/documentation/migrating-to-3/)
+
+Update source, biometric credentials, and stored internet passwords from Lockbox 2.x.
+
 ## [Migrating to Lockbox 2](/docs/lockbox-swift/documentation/migrating-to-2/)
 
 Update source and stored items from Lockbox 1.x.

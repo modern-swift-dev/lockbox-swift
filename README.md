@@ -21,7 +21,7 @@ For a package manifest, add the dependency and product:
 dependencies: [
     .package(
         url: "https://github.com/modern-swift-dev/lockbox-swift.git",
-        from: "2.0.0"
+        from: "3.0.0"
     )
 ],
 targets: [
@@ -38,7 +38,7 @@ Then import the library:
 import Lockbox
 ```
 
-Upgrading from 1.x? Read [Migrating to Lockbox 2](https://modern-swift-dev.github.io/docs/lockbox-swift/documentation/migrating-to-2/).
+Upgrading from 2.x? Read [Migrating to Lockbox 3](https://modern-swift-dev.github.io/docs/lockbox-swift/documentation/migrating-to-3/). From 1.x, start with [Migrating to Lockbox 2](https://modern-swift-dev.github.io/docs/lockbox-swift/documentation/migrating-to-2/).
 
 ## Quick start
 
