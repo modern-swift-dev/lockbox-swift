@@ -119,12 +119,16 @@
         /// Returns handles for all generic-password items in a service.
         ///
         /// The search includes synchronizable and device-only items. The returned handles
-        /// preserve each matching item's account and synchronizability, and the supplied
-        /// access group. They can be used to retrieve, update, or delete individual items.
+        /// preserve each matching item's account, synchronizability, and own access group,
+        /// so each handle targets exactly one item even when the same account exists in
+        /// several access groups. If the keychain doesn't report an item's access group,
+        /// its handle uses the supplied `accessGroup` instead. Use the handles to retrieve,
+        /// update, or delete individual items.
         ///
         /// - Parameters:
         ///   - service: The service namespace whose generic-password items to find.
-        ///   - accessGroup: An optional shared keychain access group used to limit the search.
+        ///   - accessGroup: An optional shared keychain access group used to limit the search. It is
+        ///     also the access group of any returned handle whose item reports none.
         ///   - useDataProtectionKeychain: Whether macOS searches the data protection keychain.
         ///     The returned handles use the same keychain.
         /// - Returns: Handles for every matching generic-password item. Returns an empty
@@ -151,7 +155,9 @@
     }
 
     extension KeychainPassword {
-        /// Builds handles that keep each record's account and synchronizability.
+        /// Builds handles that keep each record's account, synchronizability, and access group.
+        ///
+        /// `accessGroup` is used only for records that report no access group of their own.
         static func genericPasswords(
             from records: [KeychainRecord],
             service: String,
@@ -162,7 +168,7 @@
                 makeGeneric(
                     service: service,
                     account: $0.account,
-                    accessGroup: accessGroup,
+                    accessGroup: $0.accessGroup ?? accessGroup,
                     synchronizable: $0.synchronizable,
                     attributes: [],
                     options: options(useDataProtectionKeychain: useDataProtectionKeychain, contextProvider: nil)

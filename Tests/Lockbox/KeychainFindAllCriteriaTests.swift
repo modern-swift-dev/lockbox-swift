@@ -84,6 +84,45 @@
             #expect(queries[1][kSecAttrSynchronizable as String] as? Bool == false)
         }
 
+        @Test func genericPasswordHandlesTargetOnlyTheirOwnAccessGroup() throws {
+            let records = ["group.example.one", "group.example.two"].map {
+                KeychainRecord([
+                    kSecAttrAccount as String: "shared-account" as AnyObject,
+                    kSecAttrAccessGroup as String: $0 as AnyObject
+                ])
+            }
+
+            let handles = KeychainPassword.genericPasswords(
+                from: records,
+                service: "com.example.findall",
+                accessGroup: "group.example.caller",
+                useDataProtectionKeychain: false
+            )
+            let queries = try handles.map { try #require($0.criteria.query as? [String: AnyObject]) }
+
+            #expect(queries.count == 2)
+            for query in queries {
+                #expect(query[kSecAttrService as String] as? String == "com.example.findall")
+                #expect(query[kSecAttrAccount as String] as? String == "shared-account")
+            }
+            #expect(queries[0][kSecAttrAccessGroup as String] as? String == "group.example.one")
+            #expect(queries[1][kSecAttrAccessGroup as String] as? String == "group.example.two")
+        }
+
+        @Test func genericPasswordHandleWithoutRecordAccessGroupFallsBackToCallerGroup() throws {
+            let records = [KeychainRecord([kSecAttrAccount as String: "user" as AnyObject])]
+
+            let handles = KeychainPassword.genericPasswords(
+                from: records,
+                service: "com.example.findall",
+                accessGroup: "group.example.caller",
+                useDataProtectionKeychain: false
+            )
+            let query = try #require(handles.first?.criteria.query as? [String: AnyObject])
+
+            #expect(query[kSecAttrAccessGroup as String] as? String == "group.example.caller")
+        }
+
         @Test func foundHandlesKeepDataProtectionKeychainChoice() throws {
             let records = [KeychainRecord([kSecAttrAccount as String: "user" as AnyObject])]
             let handles = KeychainPassword.genericPasswords(
