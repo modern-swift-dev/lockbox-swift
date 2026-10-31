@@ -99,7 +99,16 @@
         ///
         /// - The `http`, `https`, `ftp`, `ftps`, `smb`, and `ssh` schemes set the
         ///   protocol. Other schemes, including `sftp`, don't set a protocol.
-        /// - A URL without a scheme is treated as `https`.
+        /// - Input without a scheme is treated as `https`, with its first component as the
+        ///   host: `example.com/login` is host `example.com` and path `/login`, and
+        ///   `example.com:8443/login` also has port `8443`. Foundation reads the latter as
+        ///   scheme `example.com`, so input counts as schemeless when it has no host, doesn't
+        ///   start with `/` or `.`, and either has no scheme or has an unrecognised scheme
+        ///   followed by a port number (`1` to `65535`, then the end or `/`, `?`, `#`). That
+        ///   makes `localhost:8080` a host and port, while `ftp://files.example.com`,
+        ///   `ssh:22`, `mailto:a@b.com` and `foo:99999` keep their scheme. An unrecognised
+        ///   scheme followed only by digits, like `tel:5551`, is read as a host and port.
+        ///   `URL(string:)` rejects some schemeless input, such as `192.0.2.1:80`.
         /// - An explicit port is always copied. Otherwise `http` uses port `80` and
         ///   `https` uses port `443`; other schemes don't set a port.
         /// - The host is copied in lowercase when present, so hosts that differ only in
@@ -488,7 +497,8 @@
         /// The internet-password criteria that represent a URL.
         ///
         /// See ``KeychainCriterion/url(_:_:)`` for the mapping rules.
-        static func urlCriteria(_ url: URL, authenticationType: AuthenticationType) -> [KeychainCriterion] {
+        static func urlCriteria(_ input: URL, authenticationType: AuthenticationType) -> [KeychainCriterion] {
+            let url = schemelessURLAsHTTPS(input) ?? input
             var criteria: [KeychainCriterion] = []
             let internetProtocol: InternetProtocol? = if let scheme = url.scheme {
                 InternetProtocol(urlScheme: scheme)
@@ -512,6 +522,47 @@
             criteria.append(.urlPath(url.path.isEmpty ? "/" : url.path))
             criteria.append(.urlAuthenticationType(authenticationType))
             return criteria
+        }
+
+        /// Returns `url` with an `https://` prefix when it's schemeless input such as
+        /// `example.com/login`, and `nil` when it isn't or the prefixed text isn't a URL with a host.
+        ///
+        /// Foundation parses `example.com` as a path and `example.com:8443/login` as scheme
+        /// `example.com`, so a missing scheme can't be detected by `url.scheme == nil`. The input is
+        /// schemeless when it has no host, doesn't start with `/` or `.` (a path, not a host),
+        /// and either has no scheme or has a scheme that isn't one of the recognised protocols
+        /// followed by a port number.
+        private static func schemelessURLAsHTTPS(_ url: URL) -> URL? {
+            var text = url.absoluteString
+            guard url.host == nil, !text.hasPrefix("/"), !text.hasPrefix(".") else {
+                return nil
+            }
+            if let scheme = url.scheme {
+                guard InternetProtocol(urlScheme: scheme) == nil,
+                      let colon = text.firstIndex(of: ":"),
+                      isPortFollowedByPathOrEnd(text[text.index(after: colon)...]) else {
+                    return nil
+                }
+            } else {
+                // Foundation percent-encodes the brackets and colons of an IPv6 literal in a path.
+                for (encoded, character) in [("%5B", "["), ("%5D", "]"), ("%3A", ":")] {
+                    text = text.replacingOccurrences(of: encoded, with: character)
+                }
+            }
+            guard let prefixed = URL(string: "https://" + text), prefixed.host?.isEmpty == false else {
+                return nil
+            }
+            return prefixed
+        }
+
+        /// Whether `text` starts with a port number (`1` to `65535`) that is followed by the end of
+        /// the text or one of `/`, `?`, `#`.
+        private static func isPortFollowedByPathOrEnd(_ text: Substring) -> Bool {
+            let digits = text.prefix { $0.isASCII && $0.isNumber }
+            guard (1 ... 5).contains(digits.count), let port = Int(digits), (1 ... 65535).contains(port) else {
+                return false
+            }
+            return text.dropFirst(digits.count).first.map { "/?#".contains($0) } ?? true
         }
     }
 
