@@ -31,7 +31,7 @@
         public let lastUpdate: Date?
 
         /// The item's description (`kSecAttrDescription`), or an empty string when absent.
-        public let description: String
+        public let itemDescription: String
 
         /// The item's comment (`kSecAttrComment`), or an empty string when absent.
         public let comment: String
@@ -89,7 +89,7 @@
             account = (attributes[kSecAttrAccount as String] as? String) ?? ""
             creation = attributes[kSecAttrCreationDate as String] as? Date
             lastUpdate = attributes[kSecAttrModificationDate as String] as? Date
-            description = (attributes[kSecAttrDescription as String] as? String) ?? ""
+            itemDescription = (attributes[kSecAttrDescription as String] as? String) ?? ""
             comment = (attributes[kSecAttrComment as String] as? String) ?? ""
             label = (attributes[kSecAttrLabel as String] as? String) ?? ""
             data = (attributes[kSecValueData as String] as? Data)

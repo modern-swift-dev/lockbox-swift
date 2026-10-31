@@ -128,7 +128,7 @@
             let record = try #require(try second.retrieve())
             #expect(record.label == "Second label")
             #expect(record.comment == "Second comment")
-            #expect(record.description == "Second description")
+            #expect(record.itemDescription == "Second description")
             #expect(try first.getString() == "second")
         }
 
