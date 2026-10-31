@@ -119,8 +119,11 @@
         /// Returns handles for all generic-password items in a service.
         ///
         /// The search includes synchronizable and device-only items. The returned handles
-        /// preserve each matching item's account and synchronizability, and the supplied
-        /// access group. They can be used to retrieve, update, or delete individual items.
+        /// preserve each matching item's account, synchronizability, and own access group,
+        /// so each handle targets exactly one item even when the same account exists in
+        /// several access groups. If the keychain doesn't report an item's access group,
+        /// its handle has no access group. Use the handles to retrieve, update, or delete
+        /// individual items.
         ///
         /// - Parameters:
         ///   - service: The service namespace whose generic-password items to find.
@@ -144,25 +147,23 @@
             return genericPasswords(
                 from: records,
                 service: service,
-                accessGroup: accessGroup,
                 useDataProtectionKeychain: useDataProtectionKeychain
             )
         }
     }
 
     extension KeychainPassword {
-        /// Builds handles that keep each record's account and synchronizability.
+        /// Builds handles that keep each record's account, synchronizability, and access group.
         static func genericPasswords(
             from records: [KeychainRecord],
             service: String,
-            accessGroup: String?,
             useDataProtectionKeychain: Bool
         ) -> [KeychainPassword] {
             records.map {
                 makeGeneric(
                     service: service,
                     account: $0.account,
-                    accessGroup: accessGroup,
+                    accessGroup: $0.accessGroup,
                     synchronizable: $0.synchronizable,
                     attributes: [],
                     options: options(useDataProtectionKeychain: useDataProtectionKeychain, contextProvider: nil)
