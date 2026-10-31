@@ -51,7 +51,8 @@
             /// Discards the context's cached authentication state.
             ///
             /// After invalidation, ``context`` must return a context that can still evaluate
-            /// authentication.
+            /// authentication. ``BiometricService`` calls this before and after each save
+            /// and retrieve, so every call prompts and no authenticated context is left behind.
             func invalidate()
         }
 

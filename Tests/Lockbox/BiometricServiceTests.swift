@@ -277,6 +277,7 @@
                 #expect(authentication.evaluationCount == 1)
                 #expect(keychain.operations == [.remove, .add(afterEvaluations: 1)])
                 #expect(keychain.storedItem() == .missing)
+                #expect(authentication.context !== authentication.evaluatedContexts.last)
             }
 
             @Test func rejectedAuthenticationDoesNotTouchTheKeychain() async throws {
@@ -392,6 +393,55 @@
                 #expect(await service.hasCredentials == expected)
                 _ = try? await service.retrieve()
                 #expect((authentication.evaluationCount == 1) == expected)
+            }
+
+            @Test func everyRetrieveAuthenticatesWithAFreshContext() async throws {
+                let authentication = MockLocalAuthenticationService(result: .success)
+                let keychain = try MockBiometricCredentialStore(
+                    authentication: authentication,
+                    item: .init(data: encoded(username: "user", password: "secret"), biometricState: Data([1]))
+                )
+                let service = makeService(authentication: authentication, keychain: keychain)
+                // The app may already have authenticated the shared context.
+                let sharedContext = authentication.context
+
+                _ = try await service.retrieve()
+                _ = try await service.retrieve()
+
+                let evaluated = authentication.evaluatedContexts
+                try #require(evaluated.count == 2)
+                #expect(evaluated[0] !== sharedContext)
+                #expect(evaluated[1] !== evaluated[0])
+                // Each read uses the context that was just authenticated, so it doesn't prompt again.
+                try #require(keychain.readContexts.count == 2)
+                #expect(keychain.readContexts[0] === evaluated[0])
+                #expect(keychain.readContexts[1] === evaluated[1])
+            }
+
+            @Test(arguments: [
+                LAContext.PolicyEvaluationResult.success,
+                .failed,
+                .underlying(LAError(.userCancel))
+            ])
+            func noAuthenticatedContextOutlivesAnOperation(result: LAContext.PolicyEvaluationResult) async throws {
+                let authentication = MockLocalAuthenticationService(result: result)
+                let keychain = try MockBiometricCredentialStore(
+                    authentication: authentication,
+                    item: .init(data: encoded(username: "user", password: "secret"), biometricState: Data([1]))
+                )
+                let service = makeService(authentication: authentication, keychain: keychain)
+
+                let beforeRetrieve = authentication.context
+                _ = try? await service.retrieve()
+                let retrieveContext = try #require(authentication.evaluatedContexts.last)
+                #expect(retrieveContext !== beforeRetrieve)
+                #expect(authentication.context !== retrieveContext)
+
+                let beforeSave = authentication.context
+                try? await service.save(username: "user", password: "new")
+                let saveContext = try #require(authentication.evaluatedContexts.last)
+                #expect(saveContext !== beforeSave)
+                #expect(authentication.context !== saveContext)
             }
 
         }

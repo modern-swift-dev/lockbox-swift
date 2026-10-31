@@ -6,7 +6,8 @@
         /// Stores and retrieves credentials in the keychain using biometric access control.
         ///
         /// `BiometricService` protects a generic-password item with the device's current
-        /// biometric set. Saving and retrieving credentials prompts for local authentication.
+        /// biometric set. Every call to ``save(username:password:)`` and ``retrieve()``
+        /// prompts for local authentication.
         ///
         /// The item records the biometric state it was saved with. When the enrolled
         /// biometrics change, the keychain makes the item permanently unreadable;
@@ -108,7 +109,9 @@
             ///   - account: The account name used to identify the keychain item.
             ///   - accessGroup: The keychain access group, or `nil` to use the app's default access.
             ///   - localAuthenticationService: The local-authentication service used for prompts
-            ///     and as the keychain authentication context.
+            ///     and as the keychain authentication context. The service invalidates its
+            ///     context before and after each ``save(username:password:)`` and
+            ///     ``retrieve()``, so an earlier authentication is never reused.
             public convenience init(
                 service: String,
                 account: String = "credentials",
@@ -156,7 +159,7 @@
 
             /// Saves credentials after successfully evaluating biometric access control.
             ///
-            /// Any credentials already stored for the
+            /// The user authenticates on every call. Any credentials already stored for the
             /// configured service and account are deleted, then the new ones are added, so
             /// `save` also replaces credentials that a biometric change made unreadable
             /// (``BiometricServiceError/biometricChanged``) without a call to ``forget()``.
@@ -180,6 +183,9 @@
                 }
 
                 let authentication = localAuthenticationService
+                // A context that's already authenticated would let the keychain skip the prompt.
+                authentication.invalidate()
+                defer { authentication.invalidate() }
                 let result = await authentication.evaluate(
                     access: Self.makeAccessControl(),
                     operation: .createItem,
@@ -218,6 +224,9 @@
 
             /// Authenticates the user and retrieves the stored credentials.
             ///
+            /// The user authenticates on every call; an earlier successful call doesn't
+            /// unlock later ones.
+            ///
             /// - Returns: The decoded username and password.
             /// - Throws: ``BiometricServiceError`` when biometrics are unsupported or not
             ///   configured, authentication fails or is locked out, or stored data cannot be
@@ -239,6 +248,10 @@
                 try await Self.performOffMainActor {
                     try Self.checkStoredItem(keychain.storedItem(), currentState: authentication.biometricState)
                 }
+                // A context that's already authenticated would let the keychain skip the prompt.
+                // The read below uses the context evaluated here, so the user is asked once.
+                authentication.invalidate()
+                defer { authentication.invalidate() }
                 let result = await authentication.evaluate(
                     access: Self.makeAccessControl(),
                     operation: .useItem,
