@@ -18,6 +18,7 @@
             ///
             /// - Parameters:
             ///   - url: The URL whose scheme, host, port, and path identify the internet password.
+            ///     A URL without a scheme, such as `example.com:8443/login`, is treated as `https`.
             ///   - authenticationType: The authentication type associated with the password.
             ///     Defaults to ``KeychainCriterion/AuthenticationType/default``, the same default
             ///     as ``KeychainCriterion/url(_:_:)``. It's part of the item's identity.
@@ -86,6 +87,7 @@
             ///
             /// - Parameters:
             ///   - url: The URL whose scheme, host, port, and path identify the internet password.
+            ///     A URL without a scheme, such as `example.com:8443/login`, is treated as `https`.
             ///   - authenticationType: The authentication type associated with the password.
             ///     Defaults to ``KeychainCriterion/AuthenticationType/default``, the same default
             ///     as ``KeychainCriterion/url(_:_:)``. It's part of the item's identity.
