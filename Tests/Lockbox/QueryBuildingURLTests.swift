@@ -17,6 +17,26 @@
             #expect(query[kSecAttrServer as String] as? String == "files.example.com")
         }
 
+        @Test func urlHostIsLowercased() throws {
+            let mixedCase = try #require(URL(string: "https://Example.COM/Login"))
+            let lowercase = try #require(URL(string: "https://example.com/Login"))
+
+            let query = try #require([KeychainCriterion.url(mixedCase)].query as? [String: AnyObject])
+            let lowercaseQuery = try #require([KeychainCriterion.url(lowercase)].query as? [String: AnyObject])
+
+            #expect(query[kSecAttrServer as String] as? String == "example.com")
+            #expect(query[kSecAttrPath as String] as? String == "/Login")
+            #expect(query as NSDictionary == lowercaseQuery as NSDictionary)
+        }
+
+        @Test func internetPasswordHostIsLowercased() throws {
+            let url = try #require(URL(string: "https://API.Example.com"))
+            let password = KeychainPassword.internet(url: url, account: "user")
+
+            let query = try #require(password.criteria.query as? [String: AnyObject])
+            #expect(query[kSecAttrServer as String] as? String == "api.example.com")
+        }
+
         @Test func queryContainsURLWithFTPS() throws {
             let url = try #require(URL(string: "ftps://files.example.com"))
             let criteria: [KeychainCriterion] = [

@@ -38,7 +38,9 @@
 
         /// Matches the synchronizability attribute (`kSecAttrSynchronizable`).
         ///
-        /// Pass `nil` to omit this attribute from the query.
+        /// Pass `nil` to omit this attribute from the query. Like any later criterion,
+        /// `nil` also removes a value set by an earlier `synchronizable` or
+        /// ``synchronizableAny`` criterion in the same array.
         case synchronizable(Bool?)
 
         /// Matches both synchronizable and device-only items
@@ -100,7 +102,8 @@
         /// - A URL without a scheme is treated as `https`.
         /// - An explicit port is always copied. Otherwise `http` uses port `80` and
         ///   `https` uses port `443`; other schemes don't set a port.
-        /// - The host is copied when present.
+        /// - The host is copied in lowercase when present, so hosts that differ only in
+        ///   case identify the same item.
         /// - An empty path is stored as `/`.
         ///
         /// ``KeychainPassword/internet(url:authenticationType:securityDomain:account:accessGroup:synchronizable:useDataProtectionKeychain:protection:label:comment:description:contextProvider:)``
@@ -426,9 +429,7 @@
                 case let .securityDomain(value):
                     query[kSecAttrSecurityDomain as String] = value as AnyObject?
                 case let .synchronizable(value):
-                    if let value {
-                        query[kSecAttrSynchronizable as String] = value ? kCFBooleanTrue : kCFBooleanFalse
-                    }
+                    query[kSecAttrSynchronizable as String] = value.map { $0 ? kCFBooleanTrue : kCFBooleanFalse }
                 case .synchronizableAny:
                     query[kSecAttrSynchronizable as String] = kSecAttrSynchronizableAny
                 case let .account(value):
@@ -502,7 +503,8 @@
             }
 
             if let host = url.host {
-                criteria.append(.urlHost(host))
+                // Host names are case-insensitive, so `Example.COM` and `example.com` share an item.
+                criteria.append(.urlHost(host.lowercased()))
             }
 
             criteria.append(.urlPath(url.path.isEmpty ? "/" : url.path))

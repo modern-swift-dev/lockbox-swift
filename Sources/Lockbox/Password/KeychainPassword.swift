@@ -34,14 +34,15 @@
             /// Makes the item's data available according to an accessibility policy
             /// (`kSecAttrAccessible`).
             ///
-            /// The policy is applied when the item is created and again whenever it's updated.
+            /// The policy is applied whenever the item is written.
             case accessibility(KeychainCriterion.Accessibility)
 
             /// Protects the item with an access-control policy (`kSecAttrAccessControl`),
             /// such as one requiring user presence or biometrics.
             ///
             /// The policy carries its own accessibility level, set when you create it with
-            /// `SecAccessControlCreateWithFlags`. It's applied only when the item is created.
+            /// `SecAccessControlCreateWithFlags`. The policy is applied whenever the item is
+            /// written, so saving with a different policy replaces the item's protection.
             case accessControl(SecAccessControl)
 
             /// The criterion that applies this protection to an item.
@@ -64,8 +65,7 @@
 
         /// Attributes applied when the item is written but never used to find it.
         ///
-        /// Access control is applied only when the item is created. Other attributes
-        /// are applied on creation and replaced on update.
+        /// They're applied when the item is created and replaced when it's updated.
         public let attributes: [KeychainCriterion]
 
         /// Creates a handle from explicit keychain criteria.
@@ -109,15 +109,8 @@
         }
 
         /// The attributes written when an existing item is updated.
-        ///
-        /// Access control can't be changed after creation, so it's excluded.
         func updateAttributes(data: Data) -> [KeychainCriterion] {
-            [.data(data)] + attributes.filter {
-                if case .accessControl = $0 {
-                    return false
-                }
-                return true
-            }
+            [.data(data)] + attributes
         }
 
         /// Builds the write-only attributes shared by the password factories.

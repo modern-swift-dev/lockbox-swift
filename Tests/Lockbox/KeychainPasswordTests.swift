@@ -128,7 +128,7 @@
             let record = try #require(try second.retrieve())
             #expect(record.label == "Second label")
             #expect(record.comment == "Second comment")
-            #expect(record.description == "Second description")
+            #expect(record.itemDescription == "Second description")
             #expect(try first.getString() == "second")
         }
 
@@ -162,6 +162,25 @@
 
             #expect(try password.getString() == value)
             #expect(try password.getData() == Data(value.utf8))
+        }
+
+        @Test(.requiresKeychain) func getStringThrowsInvalidUTF8WhenDataIsNotUTF8() throws {
+            let account = "invalid_utf8_\(UUID().uuidString)"
+            let password = KeychainPassword.generic(service: testService, account: account)
+            defer { cleanup(service: testService, account: account) }
+
+            try password.set(data: Data([0xFF, 0xFE]))
+
+            do {
+                _ = try password.getString()
+                Issue.record("Expected invalid UTF-8")
+            } catch {
+                guard case .invalidUTF8 = error else {
+                    Issue.record("Unexpected error: \(error)")
+                    return
+                }
+            }
+            #expect(try password.getData() == Data([0xFF, 0xFE]))
         }
 
         @Test(.requiresKeychain) func getStringReturnsNilWhenNotExists() throws {

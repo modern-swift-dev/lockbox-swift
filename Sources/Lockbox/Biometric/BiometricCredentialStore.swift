@@ -17,7 +17,6 @@
         let service: String
         let account: String
         let accessGroup: String?
-        let synchronizable: Bool
 
         /// Attribute-only queries use a separate context so cached prompt settings cannot enable UI.
         var existenceQuery: [String: Any] {
@@ -27,7 +26,7 @@
                 kSecClass as String: kSecClassGenericPassword,
                 kSecAttrService as String: service,
                 kSecAttrAccount as String: account,
-                kSecAttrSynchronizable as String: synchronizable,
+                kSecAttrSynchronizable as String: false,
                 kSecReturnAttributes as String: true,
                 kSecMatchLimit as String: kSecMatchLimitOne,
                 kSecUseAuthenticationContext as String: context,

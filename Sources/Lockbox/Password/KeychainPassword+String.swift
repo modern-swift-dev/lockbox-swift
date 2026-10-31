@@ -5,14 +5,18 @@
 
         /// Retrieves this item's data as a UTF-8 string.
         ///
-        /// - Returns: The decoded string, `nil` when no item matches ``criteria``, or
-        ///   `nil` when the stored data is not valid UTF-8.
-        /// - Throws: ``KeychainError`` when the Security framework cannot retrieve the item.
+        /// - Returns: The decoded string, or `nil` when no item matches ``criteria``.
+        /// - Throws: ``KeychainError/invalidUTF8`` when the item exists but its data isn't
+        ///   valid UTF-8; read it with ``getData()`` instead. Otherwise ``KeychainError`` when
+        ///   the Security framework cannot retrieve the item.
         func getString() throws(KeychainError) -> String? {
             guard let data = try getData() else {
                 return nil
             }
-            return String(data: data, encoding: .utf8)
+            guard let string = String(data: data, encoding: .utf8) else {
+                throw .invalidUTF8
+            }
+            return string
         }
 
         /// Creates or updates this keychain item with the UTF-8 representation of a string.

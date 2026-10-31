@@ -18,14 +18,12 @@
 
             private func makeService(
                 account: String = "credentials",
-                synchronizable: Bool = false,
                 authentication: MockLocalAuthenticationService,
                 keychain: MockBiometricCredentialStore? = nil
             ) -> BiometricService {
                 BiometricService(
                     service: "BiometricServiceTests",
                     account: account,
-                    synchronizable: synchronizable,
                     localAuthenticationService: authentication,
                     keychainOverride: keychain,
                     baselineDirectory: baselineDirectory
@@ -133,8 +131,7 @@
                     password: .generic(service: "BiometricServiceTests", account: "credentials"),
                     service: "BiometricServiceTests",
                     account: "credentials",
-                    accessGroup: "group.example",
-                    synchronizable: false
+                    accessGroup: "group.example"
                 )
                 let query = store.existenceQuery
                 #expect(query[kSecReturnData as String] == nil)
@@ -144,6 +141,21 @@
                 let context = try #require(query[kSecUseAuthenticationContext as String] as? LAContext)
                 #expect(context.interactionNotAllowed)
                 #expect(context !== authentication.context)
+            }
+
+            @Test func credentialsAreDeviceOnlyInTheirAccessGroup() throws {
+                let service = BiometricService(
+                    service: "BiometricServiceTests",
+                    accessGroup: "group.example",
+                    localAuthenticationService: MockLocalAuthenticationService(result: .success)
+                )
+                let store = try #require(service.keychain as? KeychainBiometricCredentialStore)
+
+                let query = try #require(store.password.criteria.query as? [String: AnyObject])
+                #expect(query[kSecAttrSynchronizable as String] as? Bool == false)
+                #expect(query[kSecAttrAccessGroup as String] as? String == "group.example")
+                #expect(store.existenceQuery[kSecAttrSynchronizable as String] as? Bool == false)
+                #expect(store.existenceQuery[kSecAttrAccessGroup as String] as? String == "group.example")
             }
 
             @Test func credentialsUseTheDataProtectionKeychain() throws {
@@ -222,20 +234,6 @@
 
                 #expect(keychain.operations.count == 2)
                 #expect(keychain.mainThreadAccessCount == 0)
-            }
-
-            @Test func synchronizationIsRejectedBeforeAuthentication() async {
-                let authentication = MockLocalAuthenticationService(result: .success)
-                let service = makeService(synchronizable: true, authentication: authentication)
-                do {
-                    try await service.save(username: "user", password: "secret")
-                    Issue.record("Expected unsupported synchronization")
-                } catch BiometricServiceError.synchronizationUnsupported {
-                    #expect(authentication.evaluationCount == 0)
-                    #expect(!baselineExists())
-                } catch {
-                    Issue.record("Unexpected error: \(error)")
-                }
             }
 
             @Test func saveRecordsBiometricStateForTheItem() async throws {
@@ -495,7 +493,6 @@
 
             func evaluate(
                 policy _: LAPolicy,
-                operation _: LAAccessControlOperation,
                 reason _: String?
             ) async -> LAContext.PolicyEvaluationResult {
                 .failed

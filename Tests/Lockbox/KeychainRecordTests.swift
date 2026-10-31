@@ -32,7 +32,7 @@
             #expect(record.account == "")
             #expect(record.creation == nil)
             #expect(record.lastUpdate == nil)
-            #expect(record.description == "")
+            #expect(record.itemDescription == "")
             #expect(record.comment == "")
             #expect(record.label == "")
             #expect(record.data == nil)
@@ -87,7 +87,7 @@
             ]
             let record = KeychainRecord(attributes)
 
-            #expect(record.description == "Test Description")
+            #expect(record.itemDescription == "Test Description")
         }
 
         @Test func initParsesComment() {
@@ -301,7 +301,7 @@
             #expect(record.account == "john.doe@example.com")
             #expect(record.creation == creationDate)
             #expect(record.lastUpdate == modificationDate)
-            #expect(record.description == "User login credentials")
+            #expect(record.itemDescription == "User login credentials")
             #expect(record.comment == "Primary account")
             #expect(record.label == "MyApp Login")
             #expect(record.data == secretData)

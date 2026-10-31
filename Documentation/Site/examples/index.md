@@ -33,7 +33,7 @@ try token.set(data: tokenData)
 let savedToken = try token.getData()
 ```
 
-Pass `protection`, `label`, `comment`, or `description` to set item attributes when the item is written. These attributes don't take part in finding the item, so a later save with different values updates the same item. `protection` takes either an accessibility policy, such as `.accessibility(.afterFirstUnlockThisDeviceOnly)`, or an access-control policy, such as `.accessControl(accessControl)`, which is applied only when the item is created. Keychain Services rejects an item that sets both.
+Pass `protection`, `label`, `comment`, or `description` to set item attributes when the item is written. These attributes don't take part in finding the item, so a later save with different values updates the same item. `protection` takes either an accessibility policy, such as `.accessibility(.afterFirstUnlockThisDeviceOnly)`, or an access-control policy, such as `.accessControl(accessControl)`. Saving with a different policy changes the item's protection. Keychain Services rejects an item that sets both.
 
 Background-readable token
 

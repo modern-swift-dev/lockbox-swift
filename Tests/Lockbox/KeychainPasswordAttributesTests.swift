@@ -39,16 +39,17 @@
             #expect(query[kSecAttrAccount as String] as? String == "user")
         }
 
-        @Test func accessControlIsExcludedFromUpdateAttributes() throws {
+        @Test func accessControlIsIncludedInUpdateAttributes() throws {
+            let accessControl = try makeAccessControl()
             let password = KeychainPassword.generic(
                 service: "com.example.attributes",
                 account: "user",
-                protection: .accessControl(try makeAccessControl())
+                protection: .accessControl(accessControl)
             )
             let data = Data("secret".utf8)
 
             let attributes = try #require(password.updateAttributes(data: data).query as? [String: AnyObject])
-            #expect(attributes[kSecAttrAccessControl as String] == nil)
+            #expect(attributes[kSecAttrAccessControl as String] === accessControl)
             #expect(attributes[kSecAttrAccessible as String] == nil)
             #expect(attributes[kSecValueData as String] as? Data == data)
         }
@@ -113,20 +114,23 @@
             }
         }
 
-        @Test func internetAccessControlIsAppliedOnCreateOnly() throws {
+        @Test func internetAccessControlIsAppliedOnCreateAndUpdate() throws {
             let url = try #require(URL(string: "https://example.com/login"))
+            let accessControl = try makeAccessControl()
             let password = KeychainPassword.internet(
                 url: url,
                 account: "user",
-                protection: .accessControl(try makeAccessControl())
+                protection: .accessControl(accessControl)
             )
+            let queries = [
+                try #require(password.createCriteria.query as? [String: AnyObject]),
+                try #require(password.updateAttributes(data: Data()).query as? [String: AnyObject])
+            ]
 
-            let create = try #require(password.createCriteria.query as? [String: AnyObject])
-            #expect(create[kSecAttrAccessControl as String] != nil)
-            #expect(create[kSecAttrAccessible as String] == nil)
-            let update = try #require(password.updateAttributes(data: Data()).query as? [String: AnyObject])
-            #expect(update[kSecAttrAccessControl as String] == nil)
-            #expect(update[kSecAttrAccessible as String] == nil)
+            for query in queries {
+                #expect(query[kSecAttrAccessControl as String] === accessControl)
+                #expect(query[kSecAttrAccessible as String] == nil)
+            }
         }
 
         @Test func publicInitializerKeepsCriteriaAndAttributes() throws {

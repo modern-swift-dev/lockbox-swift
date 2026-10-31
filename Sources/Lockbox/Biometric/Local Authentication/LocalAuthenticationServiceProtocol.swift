@@ -36,13 +36,11 @@
             ///
             /// - Parameters:
             ///   - policy: The authentication policy to evaluate.
-            ///   - operation: The keychain operation associated with the evaluation.
             ///   - reason: The localized explanation shown to the user, or `nil` to use
             ///     the service's default reason.
             /// - Returns: The outcome of the authentication evaluation.
             func evaluate(
                 policy: LAPolicy,
-                operation: LAAccessControlOperation,
                 reason: String?
             ) async -> LAContext.PolicyEvaluationResult
 

@@ -119,17 +119,14 @@
             ///
             /// - Parameters:
             ///   - policy: The policy to evaluate.
-            ///   - operation: The keychain operation associated with the evaluation.
             ///   - reason: The localized explanation shown to the user, or `nil` to use ``reason``.
             /// - Returns: The outcome of the authentication evaluation.
             public func evaluate(
                 policy: LAPolicy = .deviceOwnerAuthentication,
-                operation: LAAccessControlOperation = .useItem,
                 reason: String?
             ) async -> LAContext.PolicyEvaluationResult {
                 await context.evaluate(
                     policy: policy,
-                    operation: operation,
                     reason: reason ?? self.reason
                 )
             }

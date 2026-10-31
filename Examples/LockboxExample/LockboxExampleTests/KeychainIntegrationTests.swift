@@ -89,6 +89,47 @@ import Testing
         #expect(try storedAccessibility(of: password) == kSecAttrAccessibleWhenUnlockedThisDeviceOnly as String)
     }
 
+    @Test func protectionChangesOnUpdate() throws {
+        let afterFirstUnlock = try #require(SecAccessControlCreateWithFlags(
+            nil,
+            kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly,
+            [],
+            nil
+        ))
+        let whenUnlocked = try #require(SecAccessControlCreateWithFlags(
+            nil,
+            kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
+            [],
+            nil
+        ))
+        let accessible = KeychainPassword.generic(
+            service: service,
+            account: "protection-change",
+            protection: .accessibility(.whenUnlocked)
+        )
+        let firstAccessControl = KeychainPassword.generic(
+            service: service,
+            account: "protection-change",
+            protection: .accessControl(afterFirstUnlock)
+        )
+        let secondAccessControl = KeychainPassword.generic(
+            service: service,
+            account: "protection-change",
+            protection: .accessControl(whenUnlocked)
+        )
+        defer { cleanUp(accessible) }
+
+        try accessible.set(string: "first")
+        #expect(try storedAccessibility(of: accessible) == kSecAttrAccessibleWhenUnlocked as String)
+
+        try firstAccessControl.set(string: "second")
+        #expect(try storedAccessibility(of: accessible) == kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly as String)
+
+        try secondAccessControl.set(string: "third")
+        #expect(try storedAccessibility(of: accessible) == kSecAttrAccessibleWhenUnlockedThisDeviceOnly as String)
+        #expect(try accessible.getString() == "third")
+    }
+
     /// Documents why `KeychainPassword.Protection` allows only one kind of protection.
     @Test func keychainRejectsAccessibilityWithAccessControl() throws {
         let accessControl = try #require(SecAccessControlCreateWithFlags(
