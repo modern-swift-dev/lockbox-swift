@@ -134,6 +134,7 @@
                 BiometricServiceError.unsupported,
                 .unconfigured,
                 .noCredentials,
+                .biometricChanged,
                 .failed,
                 .userFallback,
                 .lockedOut,

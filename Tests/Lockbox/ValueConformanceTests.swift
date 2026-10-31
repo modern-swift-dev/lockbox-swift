@@ -10,7 +10,6 @@
         @Test func valueTypesAreSendable() {
             requireSendable(KeychainRecord.self)
             requireSendable(KeychainError.self)
-            requireSendable(BiometricServiceResult.self)
             requireSendable(KeychainCriterion.AuthenticationType.self)
             requireSendable(KeychainCriterion.InternetProtocol.self)
             requireSendable(KeychainCriterion.self)
@@ -37,15 +36,6 @@
             #expect(first != second)
         }
 
-        @Test func biometricResultsCompareByCaseAndCredentials() {
-            #expect(BiometricServiceResult.success(username: "user", password: "secret")
-                == .success(username: "user", password: "secret"))
-            #expect(BiometricServiceResult.success(username: "user", password: "secret")
-                != .biometricChanged(username: "user", password: "secret"))
-            #expect(BiometricServiceResult.success(username: "user", password: "secret")
-                != .success(username: "user", password: "other"))
-        }
-
         @Test func criterionValuesCompareByValue() {
             #expect(KeychainCriterion.AuthenticationType.other("custom") == .other("custom"))
             #expect(KeychainCriterion.AuthenticationType.httpBasic != .httpDigest)
@@ -68,6 +58,7 @@
                 requireSendable(BiometricService.Credentials.self)
                 let credentials = BiometricService.Credentials(username: "user", password: "secret")
                 #expect(credentials == BiometricService.Credentials(username: "user", password: "secret"))
+                #expect(credentials != BiometricService.Credentials(username: "user", password: "other"))
             }
         }
     #endif

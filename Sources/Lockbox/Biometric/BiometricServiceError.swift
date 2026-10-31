@@ -15,6 +15,24 @@
             /// No credentials are stored.
             case noCredentials
 
+            /// The stored credentials can't be read because the enrolled biometrics changed
+            /// after they were saved.
+            ///
+            /// Credentials are protected by the biometric set that was enrolled when they
+            /// were saved. Adding or removing a fingerprint, or re-enrolling a face, makes
+            /// the keychain invalidate them permanently. ``BiometricService/retrieve()``
+            /// detects this before prompting, by comparing the current biometric state with
+            /// the state recorded with the credentials.
+            ///
+            /// The same error is reported when that comparison isn't possible: credentials
+            /// saved without a recorded state, such as by Lockbox 2, or a device that doesn't
+            /// report its current biometric state.
+            ///
+            /// Ask the user to sign in another way, then call
+            /// ``BiometricService/save(username:password:)``, which replaces the credentials.
+            /// You don't need to call ``BiometricService/forget()`` first.
+            case biometricChanged
+
             /// Authentication or credential access failed.
             case failed
 
@@ -57,6 +75,8 @@
                         "Biometric authentication isn't set up on this device."
                     case .noCredentials:
                         "No saved credentials were found."
+                    case .biometricChanged:
+                        "The saved credentials can't be used because the enrolled biometrics changed. Sign in again."
                     case .failed:
                         "Biometric authentication failed."
                     case .userFallback:
