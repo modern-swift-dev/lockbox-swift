@@ -17,12 +17,16 @@
             /// A Boolean value that indicates whether the device supports biometric authentication.
             var supportedByDevice: Bool { get }
 
-            /// A Boolean value that indicates whether protected credentials are present.
+            /// A Boolean value that indicates whether protected credentials are present and
+            /// can still be retrieved.
             ///
+            /// `false` when the enrolled biometrics changed since the credentials were saved.
             /// The keychain query runs off the main actor.
             var hasCredentials: Bool { get async }
 
             /// Authenticates the user and stores credentials protected by biometrics.
+            ///
+            /// Replaces any stored credentials, including ones a biometric change made unreadable.
             ///
             /// - Parameters:
             ///   - username: The username or email address to store.
@@ -33,8 +37,10 @@
             /// Authenticates the user and retrieves the protected credentials.
             ///
             /// - Returns: The stored username and password.
-            /// - Throws: An error if biometric authentication or keychain access fails.
-            func retrieve() async throws -> BiometricServiceResult
+            /// - Throws: An error if biometric authentication or keychain access fails, or
+            ///   ``BiometricServiceError/biometricChanged`` if the enrolled biometrics changed
+            ///   since the credentials were saved.
+            func retrieve() async throws -> BiometricService.Credentials
 
             /// Removes the protected credentials, off the main actor.
             func forget() async

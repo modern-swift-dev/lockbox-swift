@@ -235,14 +235,14 @@ private final class ExampleViewModel: ObservableObject {
 
     func retrieveBiometricCredentials() async {
         do {
-            let result = try await biometricService.retrieve()
-            switch result {
-                case let .success(username, password),
-                     let .biometricChanged(username, password):
-                    biometricEmail = username
-                    biometricPassword = password
-                    reportSuccess("Biometric credentials retrieved into the secure fields.")
-            }
+            let credentials = try await biometricService.retrieve()
+            biometricEmail = credentials.username
+            biometricPassword = credentials.password
+            reportSuccess("Biometric credentials retrieved into the secure fields.")
+        } catch BiometricServiceError.biometricChanged {
+            // The saved credentials can never be read again. Saving replaces them; no forget() needed.
+            biometricPassword = ""
+            reportError("Your Face ID or Touch ID enrollment changed. Enter your password, then save again.")
         } catch {
             report(error, action: "retrieving biometric credentials")
         }

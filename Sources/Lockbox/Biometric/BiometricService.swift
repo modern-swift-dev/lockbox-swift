@@ -2,12 +2,18 @@
     #if os(iOS) || os(macOS)
         import Foundation
         import LocalAuthentication
-        import os.log
 
         /// Stores and retrieves credentials in the keychain using biometric access control.
         ///
         /// `BiometricService` protects a generic-password item with the device's current
-        /// biometric set. Saving and retrieving credentials prompts for local authentication.
+        /// biometric set. Every call to ``save(username:password:)`` and ``retrieve()``
+        /// prompts for local authentication.
+        ///
+        /// The item records the biometric state it was saved with. When the enrolled
+        /// biometrics change, the keychain makes the item permanently unreadable;
+        /// ``retrieve()`` then throws ``BiometricServiceError/biometricChanged`` without
+        /// prompting, ``hasCredentials`` is `false`, and ``save(username:password:)``
+        /// replaces the item.
         ///
         /// On macOS the item is stored in the data protection keychain, which requires a
         /// signed app with a keychain access group.
@@ -19,7 +25,7 @@
         ///     localAuthenticationService: LocalAuthenticationService(reason: "Unlock credentials")
         /// )
         /// try await service.save(username: "user@example.com", password: "secret")
-        /// let result = try await service.retrieve()
+        /// let credentials = try await service.retrieve()
         /// ```
         public final class BiometricService: BiometricServiceProtocol, Sendable {
 
@@ -30,6 +36,16 @@
 
                 /// The password associated with the stored credential.
                 public let password: String
+
+                /// Creates credentials, for example in a test double of ``BiometricServiceProtocol``.
+                ///
+                /// - Parameters:
+                ///   - username: The username or email address.
+                ///   - password: The password.
+                public init(username: String, password: String) {
+                    self.username = username
+                    self.password = password
+                }
             }
 
             /// The LocalAuthentication service for interacting with biometric hardware
@@ -47,9 +63,6 @@
             /// The Keychain Item that wraps the credentials
             let keychain: any BiometricCredentialStore
 
-            /// The biometric state recorded when these credentials were saved
-            private let baseline: BiometricBaseline
-
             /// The biometric authentication technology supported by the device.
             public var supportedType: LABiometryType {
                 localAuthenticationService.supportedType
@@ -65,15 +78,27 @@
                 supportedType != .none
             }
 
-            /// A Boolean value that indicates whether the configured keychain item exists.
+            /// A Boolean value that indicates whether stored credentials can be retrieved.
             ///
-            /// This property does not authenticate or decode the stored credentials. Other
-            /// keychain errors are treated as an absence of credentials. The keychain query
-            /// runs off the main actor.
+            /// `false` when no credentials are stored, or when ``retrieve()`` would throw
+            /// ``BiometricServiceError/biometricChanged`` because the enrolled biometrics
+            /// changed since they were saved. It agrees with ``retrieve()``'s checks before
+            /// prompting.
+            ///
+            /// This property does not authenticate or decode the stored credentials; it reads
+            /// only the item's attributes. Keychain errors other than a locked device are
+            /// treated as an absence of credentials. The keychain query runs off the main actor.
             public var hasCredentials: Bool {
                 get async {
-                    let keychain = keychain
-                    return await Self.performOffMainActor { keychain.exists() }
+                    let (keychain, authentication) = (keychain, localAuthenticationService)
+                    return await Self.performOffMainActor {
+                        do {
+                            try Self.checkStoredItem(keychain.storedItem(), currentState: authentication.biometricState)
+                            return true
+                        } catch {
+                            return false
+                        }
+                    }
                 }
             }
 
@@ -84,7 +109,9 @@
             ///   - account: The account name used to identify the keychain item.
             ///   - accessGroup: The keychain access group, or `nil` to use the app's default access.
             ///   - localAuthenticationService: The local-authentication service used for prompts
-            ///     and as the keychain authentication context.
+            ///     and as the keychain authentication context. The service invalidates its
+            ///     context before and after each ``save(username:password:)`` and
+            ///     ``retrieve()``, so an earlier authentication is never reused.
             public convenience init(
                 service: String,
                 account: String = "credentials",
@@ -105,14 +132,12 @@
                 account: String = "credentials",
                 accessGroup: String? = nil,
                 localAuthenticationService: any LocalAuthenticationServiceProtocol,
-                keychainOverride: (any BiometricCredentialStore)?,
-                baselineDirectory: URL = .applicationSupportDirectory
+                keychainOverride: (any BiometricCredentialStore)?
             ) {
                 self.service = service
                 self.account = account
                 self.accessGroup = accessGroup
                 self.localAuthenticationService = localAuthenticationService
-                baseline = .forItem(service: service, account: account, accessGroup: accessGroup, in: baselineDirectory)
 
                 keychain = keychainOverride ?? KeychainBiometricCredentialStore(
                     password: .generic(
@@ -134,16 +159,21 @@
 
             /// Saves credentials after successfully evaluating biometric access control.
             ///
-            /// Existing data for the configured service and account is replaced.
+            /// The user authenticates on every call. Any credentials already stored for the
+            /// configured service and account are deleted, then the new ones are added, so
+            /// `save` also replaces credentials that a biometric change made unreadable
+            /// (``BiometricServiceError/biometricChanged``) without a call to ``forget()``.
+            /// The current biometric state is recorded with the new credentials.
             ///
             /// - Parameters:
             ///   - username: The username or email address to store.
             ///   - password: The password to store.
             /// - Throws: ``BiometricServiceError`` when biometrics are unsupported, not
-            ///   configured, rejected, locked out, or unavailable.
-            ///   A lockout leaves stored credentials in place; the system clears it after the
-            ///   user enters the device passcode.
-            ///   Encoding, keychain, and biometric-baseline storage errors are wrapped in ``BiometricServiceError/underlying(_:)``.
+            ///   configured, rejected, locked out, or unavailable, including when the device
+            ///   doesn't report its biometric state. These errors leave stored credentials in
+            ///   place; the system clears a lockout after the user enters the device passcode.
+            ///   Encoding and keychain errors are wrapped in ``BiometricServiceError/underlying(_:)``.
+            ///   If adding the new credentials fails, the old ones have already been deleted.
             public func save(username: String, password: String) async throws {
                 guard supportedByDevice else {
                     throw BiometricServiceError.unsupported
@@ -152,7 +182,11 @@
                     throw BiometricServiceError.unconfigured
                 }
 
-                let result = await localAuthenticationService.evaluate(
+                let authentication = localAuthenticationService
+                // A context that's already authenticated would let the keychain skip the prompt.
+                authentication.invalidate()
+                defer { authentication.invalidate() }
+                let result = await authentication.evaluate(
                     access: Self.makeAccessControl(),
                     operation: .createItem,
                     reason: nil
@@ -162,12 +196,16 @@
                         case .success:
                             let credentials = Credentials(username: username, password: password)
                             let data = try JSONEncoder().encode(credentials)
-                            let (keychain, baseline, authentication) = (keychain, baseline, localAuthenticationService)
+                            let keychain = keychain
                             try await Self.performOffMainActor {
-                                try keychain.set(data: data)
-                                if let state = authentication.biometricState {
-                                    try baseline.record(state)
+                                guard let state = authentication.biometricState else {
+                                    throw BiometricServiceError.unavailable
                                 }
+                                // Never update a biometric item: an update has to read it, which
+                                // needs authentication and fails once a biometric change has
+                                // invalidated it. Deleting needs neither.
+                                try keychain.remove()
+                                try keychain.add(data: data, biometricState: state)
                             }
 
                         case .failed:
@@ -186,25 +224,35 @@
 
             /// Authenticates the user and retrieves the stored credentials.
             ///
-            /// - Returns: The decoded username and password in a ``BiometricServiceResult``.
+            /// The user authenticates on every call; an earlier successful call doesn't
+            /// unlock later ones.
+            ///
+            /// - Returns: The decoded username and password.
             /// - Throws: ``BiometricServiceError`` when biometrics are unsupported or not
-            ///   configured, no credentials are stored (checked before prompting, as
-            ///   ``BiometricServiceError/noCredentials``), authentication fails or is locked out,
-            ///   or stored data cannot be read or decoded. A lockout leaves stored credentials
-            ///   in place; call ``forget()`` if your app should discard them.
-            public func retrieve() async throws -> BiometricServiceResult {
+            ///   configured, authentication fails or is locked out, or stored data cannot be
+            ///   read or decoded. Two cases are checked before prompting:
+            ///   ``BiometricServiceError/noCredentials`` when nothing is stored, and
+            ///   ``BiometricServiceError/biometricChanged`` when the enrolled biometrics changed
+            ///   since the credentials were saved, so they can never be read; call
+            ///   ``save(username:password:)`` to replace them. A lockout leaves stored
+            ///   credentials in place; call ``forget()`` if your app should discard them.
+            public func retrieve() async throws -> Credentials {
                 guard supportedByDevice else {
                     throw BiometricServiceError.unsupported
                 }
                 guard isProperlyConfigured else {
                     throw BiometricServiceError.unconfigured
                 }
-                // Don't ask the user to authenticate for credentials that aren't there.
-                guard await hasCredentials else {
-                    throw BiometricServiceError.noCredentials
+                let (keychain, authentication) = (keychain, localAuthenticationService)
+                // Don't ask the user to authenticate for credentials they can't read.
+                try await Self.performOffMainActor {
+                    try Self.checkStoredItem(keychain.storedItem(), currentState: authentication.biometricState)
                 }
-                let (keychain, baseline, authentication) = (keychain, baseline, localAuthenticationService)
-                let result = await localAuthenticationService.evaluate(
+                // A context that's already authenticated would let the keychain skip the prompt.
+                // The read below uses the context evaluated here, so the user is asked once.
+                authentication.invalidate()
+                defer { authentication.invalidate() }
+                let result = await authentication.evaluate(
                     access: Self.makeAccessControl(),
                     operation: .useItem,
                     reason: nil
@@ -212,18 +260,10 @@
                 do {
                     switch result {
                         case .success:
-                            let (storedData, changed) = try await Self.performOffMainActor {
-                                try (keychain.getData(), Self.biometricStateChanged(authentication.biometricState, baseline: baseline))
-                            }
-                            guard let data = storedData else {
+                            guard let data = try await Self.performOffMainActor({ try keychain.getData() }) else {
                                 throw BiometricServiceError.noCredentials
                             }
-
-                            let credentials: Credentials = try JSONDecoder().decode(Credentials.self, from: data)
-                            if changed {
-                                return .biometricChanged(username: credentials.username, password: credentials.password)
-                            }
-                            return .success(username: credentials.username, password: credentials.password)
+                            return try JSONDecoder().decode(Credentials.self, from: data)
                         case .failed:
                             throw BiometricServiceError.failed
                         case let .underlying(error):
@@ -240,12 +280,11 @@
             /// Removes the stored credentials and their recorded biometric state.
             ///
             /// Removal errors are ignored. Call ``hasCredentials`` to inspect whether data
-            /// remains accessible afterward. The keychain and file work runs off the main actor.
+            /// remains accessible afterward. The keychain work runs off the main actor.
             public func forget() async {
-                let (keychain, baseline) = (keychain, baseline)
+                let keychain = keychain
                 await Self.performOffMainActor {
                     try? keychain.remove()
-                    try? baseline.remove()
                 }
             }
 
@@ -275,18 +314,27 @@
                 try work()
             }
 
-            /// Compares the current biometric state with the state recorded at save time.
+            /// Throws the error ``retrieve()`` reports before prompting, if any.
             ///
-            /// An unreadable baseline counts as a change, so callers re-verify the user.
-            private nonisolated static func biometricStateChanged(_ state: Data?, baseline: BiometricBaseline) -> Bool {
-                guard let state else {
-                    return false
-                }
-                do {
-                    return try baseline.hasChanged(from: state)
-                } catch {
-                    os_log("%{public}@", type: .error, error.localizedDescription)
-                    return true
+            /// ``hasCredentials`` uses the same check, so the two always agree.
+            ///
+            /// A missing recorded or current biometric state counts as a change: without
+            /// both, Lockbox can't tell whether the keychain still lets the user read the
+            /// item. An item whose attributes can't be read, for example while the device is
+            /// locked, passes, and reading it reports the real error.
+            private nonisolated static func checkStoredItem(
+                _ item: StoredBiometricItem,
+                currentState: Data?
+            ) throws(BiometricServiceError) {
+                switch item {
+                    case .missing:
+                        throw .noCredentials
+                    case let .stored(recordedState):
+                        guard let recordedState, recordedState == currentState else {
+                            throw .biometricChanged
+                        }
+                    case .locked:
+                        return
                 }
             }
         }
