@@ -29,10 +29,10 @@
             ///   - useDataProtectionKeychain: Whether macOS stores the item in the data protection
             ///     keychain, which behaves like the iOS keychain. Requires a signed app with a
             ///     keychain access group. Other platforms always use it.
-            ///   - protection: How the item's data is protected: an accessibility policy, applied
-            ///     whenever the item is written, or an access-control policy such as one requiring
-            ///     user presence or biometrics, applied only when the item is created. An item
-            ///     can't use both. Pass `nil` to use the Security framework's default.
+            ///   - protection: How the item's data is protected: an accessibility policy, or an
+            ///     access-control policy such as one requiring user presence or biometrics. It's
+            ///     applied whenever the item is written. An item can't use both. Pass `nil` to
+            ///     use the Security framework's default.
             ///   - label: An optional user-visible label, applied when the item is written.
             ///   - comment: An optional comment, applied when the item is written.
             ///   - description: An optional kind description, applied when the item is written.
@@ -95,10 +95,10 @@
             ///   - useDataProtectionKeychain: Whether macOS stores the item in the data protection
             ///     keychain, which behaves like the iOS keychain. Requires a signed app with a
             ///     keychain access group. Other platforms always use it.
-            ///   - protection: How the item's data is protected: an accessibility policy, applied
-            ///     whenever the item is written, or an access-control policy such as one requiring
-            ///     user presence or biometrics, applied only when the item is created. An item
-            ///     can't use both. Pass `nil` to use the Security framework's default.
+            ///   - protection: How the item's data is protected: an accessibility policy, or an
+            ///     access-control policy such as one requiring user presence or biometrics. It's
+            ///     applied whenever the item is written. An item can't use both. Pass `nil` to
+            ///     use the Security framework's default.
             ///   - label: An optional user-visible label, applied when the item is written.
             ///   - comment: An optional comment, applied when the item is written.
             ///   - description: An optional kind description, applied when the item is written.
