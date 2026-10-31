@@ -4,7 +4,8 @@
     /// Errors produced while working with Keychain Services.
     ///
     /// Statuses that callers commonly handle have their own cases. Every other status
-    /// is reported as ``underlyingError(status:message:)``.
+    /// is reported as ``underlyingError(status:message:)``. Two errors are equal when they
+    /// have the same ``status``.
     public enum KeychainError: LocalizedError, Equatable {
 
         /// No item matches the query (`errSecItemNotFound`).
@@ -60,6 +61,14 @@
                 case .userCanceled: errSecUserCanceled
                 case let .underlyingError(status, _): status
             }
+        }
+
+        /// Returns whether two errors represent the same Security-framework status.
+        ///
+        /// The system message is ignored, so `.underlyingError(status: x, message: nil)`
+        /// equals `KeychainError(status: x)`.
+        public static func == (lhs: KeychainError, rhs: KeychainError) -> Bool {
+            lhs.status == rhs.status
         }
 
         /// A human-readable description containing the status code and available message.

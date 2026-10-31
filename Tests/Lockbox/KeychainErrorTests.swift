@@ -46,6 +46,17 @@
             #expect(error.status == errSecDecode)
         }
 
+        @Test func equalityIgnoresTheMessage() {
+            #expect(KeychainError.underlyingError(status: errSecDecode, message: nil) == KeychainError(status: errSecDecode))
+            #expect(KeychainError.underlyingError(status: -1, message: "a") == .underlyingError(status: -1, message: "b"))
+        }
+
+        @Test func equalityComparesTheStatus() {
+            #expect(KeychainError.underlyingError(status: -1, message: "a") != .underlyingError(status: -2, message: "a"))
+            #expect(KeychainError.itemNotFound != .duplicateItem)
+            #expect(KeychainError.underlyingError(status: errSecItemNotFound, message: nil) == .itemNotFound)
+        }
+
         @Test func typedCaseDescriptionIncludesStatusAndSystemMessage() throws {
             let message = try #require(errSecDuplicateItem.errorMessage)
             #expect(KeychainError.duplicateItem.localizedDescription == "\(errSecDuplicateItem) - \(message)")
