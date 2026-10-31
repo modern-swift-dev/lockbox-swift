@@ -29,15 +29,15 @@
             ///   - useDataProtectionKeychain: Whether macOS stores the item in the data protection
             ///     keychain, which behaves like the iOS keychain. Requires a signed app with a
             ///     keychain access group. Other platforms always use it.
-            ///   - accessibility: When the item's data is available. Applied when the item is
-            ///     written. Pass `nil` to use the Security framework's default.
-            ///   - accessControl: Optional Security access-control policy, such as one requiring
-            ///     user presence or biometrics. Applied only when the item is created.
+            ///   - protection: How the item's data is protected: an accessibility policy, applied
+            ///     whenever the item is written, or an access-control policy such as one requiring
+            ///     user presence or biometrics, applied only when the item is created. An item
+            ///     can't use both. Pass `nil` to use the Security framework's default.
             ///   - label: An optional user-visible label, applied when the item is written.
             ///   - comment: An optional comment, applied when the item is written.
             ///   - description: An optional kind description, applied when the item is written.
             ///   - contextProvider: An optional factory for the Local Authentication context
-            ///     supplied to Security framework queries. It is useful with `accessControl`.
+            ///     supplied to Security framework queries. It is useful with an access-control ``Protection``.
             /// - Returns: A handle for the internet-password item described by these attributes.
             static func internet(
                 url: URL,
@@ -47,8 +47,7 @@
                 accessGroup: String? = nil,
                 synchronizable: Bool? = nil,
                 useDataProtectionKeychain: Bool = false,
-                accessibility: KeychainCriterion.Accessibility? = nil,
-                accessControl: SecAccessControl? = nil,
+                protection: Protection? = nil,
                 label: String? = nil,
                 comment: String? = nil,
                 description: String? = nil,
@@ -62,8 +61,7 @@
                     accessGroup: accessGroup,
                     synchronizable: synchronizable,
                     attributes: writeAttributes(
-                        accessibility: accessibility,
-                        accessControl: accessControl,
+                        protection: protection,
                         label: label,
                         comment: comment,
                         description: description
@@ -97,10 +95,10 @@
             ///   - useDataProtectionKeychain: Whether macOS stores the item in the data protection
             ///     keychain, which behaves like the iOS keychain. Requires a signed app with a
             ///     keychain access group. Other platforms always use it.
-            ///   - accessibility: When the item's data is available. Applied when the item is
-            ///     written. Pass `nil` to use the Security framework's default.
-            ///   - accessControl: Optional Security access-control policy, such as one requiring
-            ///     user presence or biometrics. Applied only when the item is created.
+            ///   - protection: How the item's data is protected: an accessibility policy, applied
+            ///     whenever the item is written, or an access-control policy such as one requiring
+            ///     user presence or biometrics, applied only when the item is created. An item
+            ///     can't use both. Pass `nil` to use the Security framework's default.
             ///   - label: An optional user-visible label, applied when the item is written.
             ///   - comment: An optional comment, applied when the item is written.
             ///   - description: An optional kind description, applied when the item is written.
@@ -113,8 +111,7 @@
                 accessGroup: String? = nil,
                 synchronizable: Bool? = nil,
                 useDataProtectionKeychain: Bool = false,
-                accessibility: KeychainCriterion.Accessibility? = nil,
-                accessControl: SecAccessControl? = nil,
+                protection: Protection? = nil,
                 label: String? = nil,
                 comment: String? = nil,
                 description: String? = nil
@@ -127,8 +124,7 @@
                     accessGroup: accessGroup,
                     synchronizable: synchronizable,
                     attributes: writeAttributes(
-                        accessibility: accessibility,
-                        accessControl: accessControl,
+                        protection: protection,
                         label: label,
                         comment: comment,
                         description: description

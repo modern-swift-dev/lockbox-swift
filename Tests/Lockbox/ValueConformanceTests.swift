@@ -15,6 +15,7 @@
             requireSendable(KeychainCriterion.InternetProtocol.self)
             requireSendable(KeychainCriterion.self)
             requireSendable(KeychainPassword.self)
+            requireSendable(KeychainPassword.Protection.self)
         }
 
         @Test func recordsWithSameAttributesAreEqual() {

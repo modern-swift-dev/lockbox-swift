@@ -127,7 +127,7 @@
                         synchronizable: synchronizable,
                         // Access-controlled items require the data protection keychain on macOS.
                         useDataProtectionKeychain: true,
-                        accessControl: Self.makeAccessControl(),
+                        protection: .accessControl(Self.makeAccessControl()),
                         contextProvider: { localAuthenticationService.context }
                     ),
                     service: service,

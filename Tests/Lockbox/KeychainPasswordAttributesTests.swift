@@ -18,7 +18,7 @@
             let password = KeychainPassword.generic(
                 service: "com.example.attributes",
                 account: "user",
-                accessControl: try makeAccessControl()
+                protection: .accessControl(try makeAccessControl())
             )
 
             let query = try #require(password.criteria.query as? [String: AnyObject])
@@ -26,15 +26,16 @@
             #expect(query[kSecAttrService as String] as? String == "com.example.attributes")
         }
 
-        @Test func accessControlIsAppliedOnCreate() throws {
+        @Test func accessControlIsAppliedOnCreateWithoutAccessibility() throws {
             let password = KeychainPassword.generic(
                 service: "com.example.attributes",
                 account: "user",
-                accessControl: try makeAccessControl()
+                protection: .accessControl(try makeAccessControl())
             )
 
             let query = try #require(password.createCriteria.query as? [String: AnyObject])
             #expect(query[kSecAttrAccessControl as String] != nil)
+            #expect(query[kSecAttrAccessible as String] == nil)
             #expect(query[kSecAttrAccount as String] as? String == "user")
         }
 
@@ -42,20 +43,41 @@
             let password = KeychainPassword.generic(
                 service: "com.example.attributes",
                 account: "user",
-                accessControl: try makeAccessControl()
+                protection: .accessControl(try makeAccessControl())
             )
             let data = Data("secret".utf8)
 
             let attributes = try #require(password.updateAttributes(data: data).query as? [String: AnyObject])
             #expect(attributes[kSecAttrAccessControl as String] == nil)
+            #expect(attributes[kSecAttrAccessible as String] == nil)
             #expect(attributes[kSecValueData as String] as? Data == data)
+        }
+
+        @Test func accessibilityIsAppliedOnCreateAndUpdateWithoutAccessControl() throws {
+            let password = KeychainPassword.generic(
+                service: "com.example.attributes",
+                account: "user",
+                protection: .accessibility(.afterFirstUnlockThisDeviceOnly)
+            )
+            let queries = [
+                try #require(password.createCriteria.query as? [String: AnyObject]),
+                try #require(password.updateAttributes(data: Data()).query as? [String: AnyObject])
+            ]
+
+            for query in queries {
+                #expect(
+                    query[kSecAttrAccessible as String] as? String
+                        == kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly as String
+                )
+                #expect(query[kSecAttrAccessControl as String] == nil)
+            }
         }
 
         @Test func writeAttributesAreExcludedFromMatchingQuery() throws {
             let password = KeychainPassword.generic(
                 service: "com.example.attributes",
                 account: "user",
-                accessibility: .afterFirstUnlock,
+                protection: .accessibility(.afterFirstUnlock),
                 label: "Label",
                 comment: "Comment",
                 description: "Description"
@@ -73,7 +95,7 @@
             let password = KeychainPassword.internet(
                 url: url,
                 account: "user",
-                accessibility: .afterFirstUnlock,
+                protection: .accessibility(.afterFirstUnlock),
                 label: "Label",
                 comment: "Comment",
                 description: "Description"
@@ -89,6 +111,22 @@
                 #expect(query[kSecAttrComment as String] as? String == "Comment")
                 #expect(query[kSecAttrDescription as String] as? String == "Description")
             }
+        }
+
+        @Test func internetAccessControlIsAppliedOnCreateOnly() throws {
+            let url = try #require(URL(string: "https://example.com/login"))
+            let password = KeychainPassword.internet(
+                url: url,
+                account: "user",
+                protection: .accessControl(try makeAccessControl())
+            )
+
+            let create = try #require(password.createCriteria.query as? [String: AnyObject])
+            #expect(create[kSecAttrAccessControl as String] != nil)
+            #expect(create[kSecAttrAccessible as String] == nil)
+            let update = try #require(password.updateAttributes(data: Data()).query as? [String: AnyObject])
+            #expect(update[kSecAttrAccessControl as String] == nil)
+            #expect(update[kSecAttrAccessible as String] == nil)
         }
 
         @Test func publicInitializerKeepsCriteriaAndAttributes() throws {

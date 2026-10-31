@@ -108,7 +108,7 @@
             let first = KeychainPassword.generic(
                 service: testService,
                 account: account,
-                accessibility: .whenUnlocked,
+                protection: .accessibility(.whenUnlocked),
                 label: "First label",
                 comment: "First comment",
                 description: "First description"
@@ -118,7 +118,7 @@
             let second = KeychainPassword.generic(
                 service: testService,
                 account: account,
-                accessibility: .afterFirstUnlock,
+                protection: .accessibility(.afterFirstUnlock),
                 label: "Second label",
                 comment: "Second comment",
                 description: "Second description"

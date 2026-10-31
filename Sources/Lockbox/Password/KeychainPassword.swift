@@ -4,8 +4,8 @@
 
     /// A handle for a single generic or internet password item in the keychain.
     ///
-    /// Create a handle with ``generic(service:account:accessGroup:synchronizable:useDataProtectionKeychain:accessibility:accessControl:label:comment:description:contextProvider:)``
-    /// or ``internet(url:authenticationType:securityDomain:account:accessGroup:synchronizable:useDataProtectionKeychain:accessibility:accessControl:label:comment:description:contextProvider:)``,
+    /// Create a handle with ``generic(service:account:accessGroup:synchronizable:useDataProtectionKeychain:protection:label:comment:description:contextProvider:)``
+    /// or ``internet(url:authenticationType:securityDomain:account:accessGroup:synchronizable:useDataProtectionKeychain:protection:label:comment:description:contextProvider:)``,
     /// then use ``set(data:)``, ``set(string:)``, ``getData()``, ``getString()``, or
     /// ``remove()`` to operate on its matching item. A handle does not read or retain
     /// the item's secret until a retrieval method is called.
@@ -20,6 +20,40 @@
     /// let value = try password.getString()
     /// ```
     public struct KeychainPassword: Sendable {
+
+        /// How a keychain item's data is protected when the item is written.
+        ///
+        /// An item uses either an accessibility policy or an access-control policy,
+        /// never both: Keychain Services rejects an item that sets both
+        /// `kSecAttrAccessible` and `kSecAttrAccessControl` with `errSecParam`.
+        ///
+        /// `Protection` is `Sendable` for the same reason as ``KeychainCriterion``: Lockbox
+        /// never mutates the `SecAccessControl` payload and only passes it to Keychain Services.
+        public enum Protection: @unchecked Sendable {
+
+            /// Makes the item's data available according to an accessibility policy
+            /// (`kSecAttrAccessible`).
+            ///
+            /// The policy is applied when the item is created and again whenever it's updated.
+            case accessibility(KeychainCriterion.Accessibility)
+
+            /// Protects the item with an access-control policy (`kSecAttrAccessControl`),
+            /// such as one requiring user presence or biometrics.
+            ///
+            /// The policy carries its own accessibility level, set when you create it with
+            /// `SecAccessControlCreateWithFlags`. It's applied only when the item is created.
+            case accessControl(SecAccessControl)
+
+            /// The criterion that applies this protection to an item.
+            var criterion: KeychainCriterion {
+                switch self {
+                    case let .accessibility(accessibility):
+                        .accessible(accessibility)
+                    case let .accessControl(accessControl):
+                        .accessControl(accessControl)
+                }
+            }
+        }
 
         /// The criteria used to identify this keychain item and configure its operations.
         ///
@@ -43,7 +77,8 @@
         ///   - criteria: Criteria that identify the item and configure its operations.
         ///   - attributes: Attributes applied when the item is written but not used to
         ///     find it, such as ``KeychainCriterion/accessible(_:)`` or
-        ///     ``KeychainCriterion/accessControl(_:)``.
+        ///     ``KeychainCriterion/accessControl(_:)``. Include at most one of those two:
+        ///     Keychain Services rejects an item that sets both with `errSecParam`.
         public init(criteria: [KeychainCriterion], attributes: [KeychainCriterion] = []) {
             self.criteria = criteria
             self.attributes = attributes
@@ -87,18 +122,14 @@
 
         /// Builds the write-only attributes shared by the password factories.
         static func writeAttributes(
-            accessibility: KeychainCriterion.Accessibility?,
-            accessControl: SecAccessControl?,
+            protection: Protection?,
             label: String?,
             comment: String?,
             description: String?
         ) -> [KeychainCriterion] {
             var attributes: [KeychainCriterion] = []
-            if let accessibility {
-                attributes.append(.accessible(accessibility))
-            }
-            if let accessControl {
-                attributes.append(.accessControl(accessControl))
+            if let protection {
+                attributes.append(protection.criterion)
             }
             if let label {
                 attributes.append(.label(label))

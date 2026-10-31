@@ -103,7 +103,7 @@
         /// - The host is copied when present.
         /// - An empty path is stored as `/`.
         ///
-        /// ``KeychainPassword/internet(url:authenticationType:securityDomain:account:accessGroup:synchronizable:useDataProtectionKeychain:accessibility:accessControl:label:comment:description:contextProvider:)``
+        /// ``KeychainPassword/internet(url:authenticationType:securityDomain:account:accessGroup:synchronizable:useDataProtectionKeychain:protection:label:comment:description:contextProvider:)``
         /// uses the same mapping.
         case url(URL, AuthenticationType = .htmlForm)
 

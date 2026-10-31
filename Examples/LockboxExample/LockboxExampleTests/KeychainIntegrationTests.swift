@@ -32,29 +32,40 @@ import Testing
         try password.remove()
     }
 
+    /// The `kSecAttrAccessible` value Keychain Services stored for a handle's item.
+    private func storedAccessibility(of password: KeychainPassword) throws -> String? {
+        let query = password.criteria + [.limitOne, .returnAttributes(true)]
+        var result: AnyObject?
+        let status = SecItemCopyMatching(query.query, &result)
+        try #require(status == errSecSuccess)
+        return (result as? [String: Any])?[kSecAttrAccessible as String] as? String
+    }
+
     @Test func accessibilityAndMetadataChangeOnUpdate() throws {
         let first = KeychainPassword.generic(
             service: service,
             account: "attributes",
-            accessibility: .whenUnlocked,
+            protection: .accessibility(.whenUnlocked),
             label: "First"
         )
         let second = KeychainPassword.generic(
             service: service,
             account: "attributes",
-            accessibility: .afterFirstUnlockThisDeviceOnly,
+            protection: .accessibility(.afterFirstUnlockThisDeviceOnly),
             label: "Second",
             comment: "Comment"
         )
         defer { cleanUp(first, second) }
 
         try first.set(string: "first")
+        #expect(try storedAccessibility(of: first) == kSecAttrAccessibleWhenUnlocked as String)
         try second.set(string: "second")
 
         let record = try #require(try second.criteria.retrieve())
         #expect(record.label == "Second")
         #expect(record.comment == "Comment")
         #expect(try first.getString() == "second")
+        #expect(try storedAccessibility(of: second) == kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly as String)
     }
 
     @Test func accessControlledItemCanBeUpdated() throws {
@@ -64,13 +75,42 @@ import Testing
             [],
             nil
         ))
-        let password = KeychainPassword.generic(service: service, account: "access-control", accessControl: accessControl)
+        let password = KeychainPassword.generic(
+            service: service,
+            account: "access-control",
+            protection: .accessControl(accessControl)
+        )
         defer { cleanUp(password) }
 
         try password.set(string: "first")
         try password.set(string: "second")
 
         #expect(try password.getString() == "second")
+        #expect(try storedAccessibility(of: password) == kSecAttrAccessibleWhenUnlockedThisDeviceOnly as String)
+    }
+
+    /// Documents why `KeychainPassword.Protection` allows only one kind of protection.
+    @Test func keychainRejectsAccessibilityWithAccessControl() throws {
+        let accessControl = try #require(SecAccessControlCreateWithFlags(
+            nil,
+            kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
+            [],
+            nil
+        ))
+        let password = KeychainPassword.generic(service: service, account: "both-protections")
+        defer { cleanUp(password) }
+        let bothProtections: [KeychainCriterion] = [
+            .accessible(.whenUnlockedThisDeviceOnly),
+            .accessControl(accessControl)
+        ]
+
+        #expect(throws: KeychainError.underlyingError(status: errSecParam, message: errSecParam.errorMessage)) {
+            try (password.criteria + bothProtections).create(data: Data("secret".utf8))
+        }
+
+        try password.set(string: "existing")
+        let update = ([.data(Data("new".utf8))] + bothProtections).query
+        #expect(SecItemUpdate(password.criteria.query, update) == errSecParam)
     }
 
     @Test func dataProtectionKeychainOptionWorksOnIOS() throws {

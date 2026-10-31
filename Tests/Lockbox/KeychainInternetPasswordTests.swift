@@ -142,7 +142,7 @@
                     account: account,
                     accessGroup: accessGroup,
                     synchronizable: true,
-                    accessControl: accessControl,
+                    protection: .accessControl(accessControl),
                     contextProvider: { LAContext() }
                 )
 
