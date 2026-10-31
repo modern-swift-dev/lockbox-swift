@@ -48,7 +48,7 @@ let backgroundToken = KeychainPassword.generic(
 
 ## Internet password
 
-Attach the credential to its URL. Lockbox turns the URL into the keychain attributes needed by an internet password item. Internet passwords are identified by their URL, account, and optional security domain; they have no service.
+Attach the credential to its URL. Lockbox turns the URL into the keychain attributes needed by an internet password item. Internet passwords are identified by their URL, authentication type, account, and optional security domain; they have no service. The authentication type defaults to `.default` (`kSecAttrAuthenticationTypeDefault`) for both `KeychainPassword.internet(url:...)` and the `.url(_:)` criterion, so the same URL refers to the same item through either. To use another one, pass `authenticationType:` to `internet(url:...)` or the type as the second argument of `.url(_:_:)`.
 
 Internet password
 
