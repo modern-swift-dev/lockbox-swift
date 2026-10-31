@@ -72,7 +72,6 @@
             let handles = KeychainPassword.genericPasswords(
                 from: records,
                 service: "com.example.findall",
-                accessGroup: nil,
                 useDataProtectionKeychain: false
             )
             let queries = try handles.map { try #require($0.criteria.query as? [String: AnyObject]) }
@@ -95,7 +94,6 @@
             let handles = KeychainPassword.genericPasswords(
                 from: records,
                 service: "com.example.findall",
-                accessGroup: "group.example.caller",
                 useDataProtectionKeychain: false
             )
             let queries = try handles.map { try #require($0.criteria.query as? [String: AnyObject]) }
@@ -109,18 +107,17 @@
             #expect(queries[1][kSecAttrAccessGroup as String] as? String == "group.example.two")
         }
 
-        @Test func genericPasswordHandleWithoutRecordAccessGroupFallsBackToCallerGroup() throws {
+        @Test func genericPasswordHandleWithoutRecordAccessGroupIsUnscoped() throws {
             let records = [KeychainRecord([kSecAttrAccount as String: "user" as AnyObject])]
 
             let handles = KeychainPassword.genericPasswords(
                 from: records,
                 service: "com.example.findall",
-                accessGroup: "group.example.caller",
                 useDataProtectionKeychain: false
             )
             let query = try #require(handles.first?.criteria.query as? [String: AnyObject])
 
-            #expect(query[kSecAttrAccessGroup as String] as? String == "group.example.caller")
+            #expect(query[kSecAttrAccessGroup as String] == nil)
         }
 
         @Test func foundHandlesKeepDataProtectionKeychainChoice() throws {
@@ -128,7 +125,6 @@
             let handles = KeychainPassword.genericPasswords(
                 from: records,
                 service: "com.example.findall",
-                accessGroup: nil,
                 useDataProtectionKeychain: true
             ) + KeychainPassword.internetPasswords(from: records, useDataProtectionKeychain: true)
 
