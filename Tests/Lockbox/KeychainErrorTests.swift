@@ -57,6 +57,33 @@
             #expect(KeychainError.underlyingError(status: errSecItemNotFound, message: nil) == .itemNotFound)
         }
 
+        @Test func decodeStatusIsNotReportedAsInvalidUTF8() {
+            guard case .underlyingError(errSecDecode, _) = KeychainError(status: errSecDecode) else {
+                Issue.record("errSecDecode from Keychain Services isn't a UTF-8 failure")
+                return
+            }
+        }
+
+        @Test func invalidUTF8ReportsDecodeStatusAndItsOwnMessage() {
+            let error: any Error = KeychainError.invalidUTF8
+            #expect(KeychainError.invalidUTF8.status == errSecDecode)
+            #expect(error.localizedDescription == "\(errSecDecode) - The stored data isn't valid UTF-8.")
+        }
+
+        @Test(arguments: [
+            KeychainError.itemNotFound,
+            .duplicateItem,
+            .interactionNotAllowed,
+            .missingEntitlement,
+            .authenticationFailed,
+            .userCanceled,
+            .invalidUTF8,
+            .underlyingError(status: errSecParam, message: nil)
+        ])
+        func statusRoundTripsThroughInitializer(error: KeychainError) {
+            #expect(KeychainError(status: error.status) == error)
+        }
+
         @Test func typedCaseDescriptionIncludesStatusAndSystemMessage() throws {
             let message = try #require(errSecDuplicateItem.errorMessage)
             #expect(KeychainError.duplicateItem.localizedDescription == "\(errSecDuplicateItem) - \(message)")

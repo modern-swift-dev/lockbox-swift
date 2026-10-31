@@ -28,6 +28,18 @@
         /// The user cancelled the authentication prompt (`errSecUserCanceled`).
         case userCanceled
 
+        /// The item exists, but its data isn't valid UTF-8, so it can't be read as a string.
+        ///
+        /// Lockbox throws this error itself, from ``KeychainPassword/getString()``; Keychain
+        /// Services never returns it. Read the raw bytes with ``KeychainPassword/getData()``.
+        ///
+        /// Its ``status`` is `errSecDecode`. ``init(status:)`` never creates this case: it maps
+        /// `errSecDecode` to ``underlyingError(status:message:)``, because Keychain Services
+        /// also reports that status for reasons unrelated to UTF-8. The two still compare
+        /// equal, because equality compares only the ``status``; match the case with a
+        /// pattern such as `catch .invalidUTF8` to tell them apart.
+        case invalidUTF8
+
         /// A Security-framework operation failed with another status.
         ///
         /// - Parameters:
@@ -59,6 +71,7 @@
                 case .missingEntitlement: errSecMissingEntitlement
                 case .authenticationFailed: errSecAuthFailed
                 case .userCanceled: errSecUserCanceled
+                case .invalidUTF8: errSecDecode
                 case let .underlyingError(status, _): status
             }
         }
@@ -75,6 +88,7 @@
         public var localizedDescription: String {
             let message = switch self {
                 case let .underlyingError(_, message): message
+                case .invalidUTF8: "The stored data isn't valid UTF-8."
                 default: status.errorMessage
             }
             return "\(status) - \(message ?? "unknown error")"
