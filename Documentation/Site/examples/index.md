@@ -118,3 +118,13 @@ case .success(let username, let password),
     print(username, password)
 }
 ```
+
+`hasCredentials` and `forget()` run their keychain and file work off the main actor, so both are `async`:
+
+```swift
+if await credentials.hasCredentials {
+    // Offer to unlock.
+}
+
+await credentials.forget()
+```

@@ -80,7 +80,9 @@ struct ContentView: View {
                         }
                     }
                     Button("Forget Biometric Credentials", role: .destructive) {
-                        model.forgetBiometricCredentials()
+                        Task {
+                            await model.forgetBiometricCredentials()
+                        }
                     }
                 }
 
@@ -246,8 +248,8 @@ private final class ExampleViewModel: ObservableObject {
         }
     }
 
-    func forgetBiometricCredentials() {
-        biometricService.forget()
+    func forgetBiometricCredentials() async {
+        await biometricService.forget()
         biometricPassword = ""
         reportSuccess("Biometric credentials deleted.")
     }
