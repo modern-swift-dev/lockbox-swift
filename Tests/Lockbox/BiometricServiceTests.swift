@@ -495,7 +495,6 @@
 
             func evaluate(
                 policy _: LAPolicy,
-                operation _: LAAccessControlOperation,
                 reason _: String?
             ) async -> LAContext.PolicyEvaluationResult {
                 .failed

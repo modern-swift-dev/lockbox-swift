@@ -28,7 +28,7 @@
                     case .highest:
                         await evaluate(accessControl: accessControl, operation: operation, localizedReason: localizedReason)
                     case .normal:
-                        await evaluate(policy: .deviceOwnerAuthentication, operation: operation, reason: localizedReason)
+                        await evaluate(policy: .deviceOwnerAuthentication, reason: localizedReason)
                 }
             }
 
@@ -51,16 +51,14 @@
                 }
             }
 
-            /// Evaluates a Local Authentication policy for a keychain operation.
+            /// Evaluates a Local Authentication policy.
             ///
             /// - Parameters:
             ///   - policy: The authentication policy to evaluate.
-            ///   - operation: The keychain operation associated with the evaluation.
             ///   - reason: The localized explanation shown to the user.
             /// - Returns: The outcome of the authentication evaluation.
             func evaluate(
                 policy: LAPolicy,
-                operation: LAAccessControlOperation,
                 reason: String
             ) async -> PolicyEvaluationResult {
                 await withCheckedContinuation { continuation in
